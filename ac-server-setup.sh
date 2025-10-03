@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.0"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.01"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -201,12 +201,12 @@ echo -e "${GREEN}[+] Discord bot environment ready.${RESET}"
 
 # Create .env file with bot token and config
 pct exec $CTID -- bash -c "cat > /home/$USERNAME/discord-bot/.env <<EOF
-DISCORD_TOKEN=$BOT_TOKEN
+DISCORD_TOKEN='$BOT_TOKEN'
 SERVER_BASE=/home/$USERNAME/assetto-servers
 CONTROLLER_SCRIPT=/home/$USERNAME/discord-bot/server_controller.py
 STATE_FILE=/home/$USERNAME/discord-bot/last_server.json
 PID_FILE=/home/$USERNAME/discord-bot/current_server.pid
-GUILD_ID=$GUILD_ID
+GUILD_ID='$GUILD_ID'
 EOF"
 
 pct exec $CTID -- bash -c "chown $USERNAME:$USERNAME /home/$USERNAME/discord-bot/.env && chmod 600 /home/$USERNAME/discord-bot/.env"
@@ -261,12 +261,8 @@ pct exec $CTID -- bash -c "
     for archive in /home/$USERNAME/assetto-servers/*/*.tar.gz; do
         [ -e \"\$archive\" ] || continue
         dir=\$(dirname \"\$archive\")
-        sudo -u $USERNAME tar -xzf \"\$archive\" -C \"\$dir\"
+        sudo tar --no-same-owner -xzf \"\$archive\" -C \"\$dir\"
         rm -f \"\$archive\"
-
-        # Fix ownership and permissions
-        chown -R $USERNAME:$USERNAME \"\$dir\"
-        chmod -R u+rw \"\$dir\"
     done
 " >/dev/null 2>&1 &
 
@@ -328,20 +324,15 @@ echo -e "${BLUE}[>] Copying and extracting AssettoServer into each track folder.
 pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
         [ -d \"\$track_dir\" ] || continue
-        cp /home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE \"\$track_dir\"
+        cp /home/$USERNAME/assetto-servers/\$ASSETTOSERVER_FILE \"\$track_dir\"
         cd \"\$track_dir\"
-        sudo -u $USERNAME tar -xzf $ASSETTOSERVER_FILE
-        rm -f $ASSETTOSERVER_FILE
+        sudo tar --no-same-owner -xzf \"\$ASSETTOSERVER_FILE\"
+        rm -f \"\$ASSETTOSERVER_FILE\"
         # make sure the binary is executable
         if [ -f \"\$track_dir/AssettoServer\" ]; then
             chmod +x \"\$track_dir/AssettoServer\"
         fi
-
-                if [ -f \"\$track_dir/AssettoServer\" ]; then
-            chmod +x \"\$track_dir/AssettoServer\"
-        fi
-
-        # Fix ownership and permissions (important for cfg/*.ini)
+        # Fix ownership and permissions
         chown -R $USERNAME:$USERNAME \"\$track_dir\"
         chmod -R u+rw \"\$track_dir\"
     done
@@ -421,7 +412,7 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
                     tmpfile=\$(mktemp)
                     while IFS= read -r line; do
                         echo \"\$line\" >> \"\$tmpfile\"
-                        if [[ \"\$line\" =~ ^MODEL= ]]; then
+                        if [[ \"\$line\" =~ ^[Mm][Oo][Dd][Ee][Ll]= ]]; then
                             if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
                                 echo \"AI=fixed\" >> \"\$tmpfile\"
                             else
