@@ -249,10 +249,14 @@ echo -e "${BLUE}[>] Downloading AssettoServer release...${RESET}"
 ASSETTOSERVER_URL="https://github.com/compujuckel/AssettoServer/releases/download/v0.0.54/AssettoServer.linux-x64.tar.gz"
 ASSETTOSERVER_FILE="AssettoServer.linux-x64.tar.gz"
 
-# Download the AssettoServer tar.gz into the assetto-servers root
-pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -q $ASSETTOSERVER_URL -O $ASSETTOSERVER_FILE"
+# safer download (show error if fails)
+if ! pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -q $ASSETTOSERVER_URL -O $ASSETTOSERVER_FILE"; then
+    echo -e "${RED}[-] Failed to download AssettoServer. Check your internet or the release URL.${RESET}"
+    exit 1
+fi
 
 echo -e "${GREEN}[+] AssettoServer release downloaded.${RESET}"
+
 
 echo -e "${BLUE}[>] Copying and extracting AssettoServer into each track folder...${RESET}"
 
