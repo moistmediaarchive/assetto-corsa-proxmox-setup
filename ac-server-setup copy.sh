@@ -8,17 +8,13 @@ BLUE="\033[34m"
 RESET="\033[0m"
 
 clear
-
 echo -e "${YELLOW}"
-echo -e "$$\      $$\  $$$$$$\  $$$$$$\  $$$$$$\ $$$$$$$$\       $$$$$$\   $$$$$$\ " 
-echo -e "$$$\    $$$ |$$  __$$\ \_$$  _|$$  __$$\\__$$  __|     $$  __$$\ $$  __$$\ "
-echo -e "$$$$\  $$$$ |$$ /  $$ |  $$ |  $$ /  \__|  $$ |        $$ /  $$ |$$ /  \__|"
-echo -e "$$\$$\$$ $$ |$$ |  $$ |  $$ |  \$$$$$$\    $$ |$$$$$$\ $$$$$$$$ |$$ |      "
-echo -e "$$ \$$$  $$ |$$ |  $$ |  $$ |   \____$$\   $$ |\______|$$  __$$ |$$ |      "
-echo -e "$$ |\$  /$$ |$$ |  $$ |  $$ |  $$\   $$ |  $$ |        $$ |  $$ |$$ |  $$\ "
-echo -e "$$ | \_/ $$ | $$$$$$  |$$$$$$\ \$$$$$$  |  $$ |        $$ |  $$ |\$$$$$$  |"
-echo -e "\__|     \__| \______/ \______| \______/   \__|        \__|  \__| \______/"
-echo 
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
@@ -54,15 +50,14 @@ if ! pveam list $STORAGE | grep -q "ubuntu-22.04-standard"; then
 fi
 
 echo -e "${BLUE}[>] Creating LXC ...${RESET}"
-
-# --- Create LXC ---
 pct create $CTID $TEMPLATE \
   --hostname $HOSTNAME \
   --memory $MEMORY \
   --cores $CORES \
   --rootfs $DISK \
-  --net0 name=eth0,bridge=vmbr0,ip=$IP,gw=$GATEWAY
-
+  --net0 name=eth0,bridge=vmbr0,ip=$IP,gw=$GATEWAY \
+  >/dev/null 2>&1 &
+spinner $!
 echo -e "${GREEN}[+] LXC Created.${RESET}"
 
 echo -e "${BLUE}[>] Starting LXC ...${RESET}"
@@ -361,4 +356,4 @@ for track_dir in /home/'$USERNAME'/assetto-servers/*/; do
 done
 '
 
-echo "${RED}FINISHED${RESET}"
+echo -e "${RED}COMPLETE${RESET}"
