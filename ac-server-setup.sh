@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.14"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.12"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -104,10 +104,17 @@ done
 
 echo -e "${GREEN}[+] LXC Started.${RESET}"
 
-echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-spinner $!
-echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+# spinner $!
+# echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
@@ -536,7 +543,7 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
                         fi
                     done < \"\$entry_list\"
                     mv \"\$tmpfile\" \"\$entry_list\"
-
+                    echo \"[+] AI traffic injected into \$entry_list\"
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
@@ -549,7 +556,7 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     # --- Append INFINITE=1 ---
     if [ -f \"\$server_cfg\" ]; then
         echo \"INFINITE=1\" >> \"\$server_cfg\"
-
+        echo \"[+] Added INFINITE=1 to server_cfg.ini\"
     fi
 
     # --- Move fast_lane.aip if present ---
@@ -559,7 +566,7 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
             dest=\"\$inner_track_dir/ai\"
             mkdir -p \"\$dest\"
             mv \"\$track_dir/fast_lane.aip\" \"\$dest/\"
-
+            echo \"[+] Moved fast_lane.aip into \$dest\"
         else
             echo \"[!] No track folder found inside \$track_dir/content/tracks, skipping fast_lane.aip move.\"
         fi
