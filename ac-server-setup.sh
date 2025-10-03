@@ -30,7 +30,8 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.07"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -77,12 +78,6 @@ pct create $CTID $TEMPLATE \
 spinner $!
 echo -e "${GREEN}[+] LXC Created.${RESET}"
 
-# echo -e "${BLUE}[>] Starting LXC ...${RESET}"
-
-# # --- Start LXC ---
-# pct start $CTID
-# sleep 10
-
 echo -e "${BLUE}[>] Starting LXC ...${RESET}"
 
 # Start LXC in background
@@ -96,51 +91,49 @@ done
 
 echo -e "${GREEN}[+] LXC Started.${RESET}"
 
-
-# echo -e "${GREEN}[+] LXC Started.${RESET}"
-
-# spinner() {
-#     local pid=$1
-#     local delay=0.1
-#     local spinstr='|/-\'
-#     while ps -p $pid > /dev/null; do
-#         local temp=${spinstr#?}
-#         printf " [%c]  " "$spinstr"
-#         spinstr=$temp${spinstr%"$temp"}
-#         sleep $delay
-#         printf "\b\b\b\b\b\b"
-#     done
-#     printf "    \b\b\b\b"
-# }
-
-
-
-
-
-# UNCOMMENT AFTER TESTING
-
-# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-# spinner $!
-# echo -e "${GREEN}[+] LXC Updated.${RESET}"
-
-
-
-
-
+echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+spinner $!
+echo -e "${GREEN}[+] LXC Updated.${RESET}"
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
 spinner $!
 echo -e "${GREEN}[+] Dependencies installed.${RESET}"
+
+sleep .5
+
+clear
+echo -e "${YELLOW}"
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
+echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
+echo
+echo
+
+echo -e "${GREEN}[+] Dependencies installed.${RESET}"
+
 # --- Firewall Setup ---
-echo -e "${RED}[>] Setting up firewall to allow SSH, and the ports required for Assetto Server ...${RESET}"
-echo -e "${YELLOW}INFO:${RESET} Assetto Corsa requires ports 9600/tcp/udp and 8081/tcp"
-echo -e "${RED}WARNING:${RESET} You will need to port forward these ports on your router, this can open"
-echo " your server up to attacks if not configured correctly."
+echo -e "${BLUE}[>] Setting up firewall to allow SSH, and the ports required for Assetto Server ...${RESET}"
+echo -e "${YELLOW}Assetto Corsa requires ports 9600/tcp/udp and 8081/tcp${RESET}"
+echo -e "${YELLOW}You must forward these ports on your router for the server to work.${RESET}"
+
 pct exec $CTID -- bash -c "ufw allow OpenSSH && ufw allow 9600/tcp && ufw allow 9600/udp && ufw allow 8081/tcp && yes | ufw enable" >/dev/null 2>&1 &
+
+sleep 5 &
 spinner $!
+
 echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
+
+sleep 1
+
+echo -e "${BLUE}[>] Setting up LXC admin user ..."
 
 # --- Configure LXC User ---
 # Prompt until username is not empty
@@ -179,6 +172,26 @@ pct exec $CTID -- bash -c "command -v visudo >/dev/null && \
 pct exec $CTID -- bash -c "mkdir -p /home/$USERNAME/assetto-servers /home/$USERNAME/discord-bot && chown -R $USERNAME:$USERNAME /home/$USERNAME"
 
 echo -e "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
+
+sleep .5
+
+clear
+echo -e "${YELLOW}"
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
+echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
+echo
+echo
+
+echo -e "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
+
+echo -e "${BLUE}[>] Setting up Discord Bot ..."
 
 read -p "Enter GitHub repo URL for Discord bot: " BOT_REPO
 
@@ -251,13 +264,33 @@ echo -e "${GREEN}[+] Discord bot service created and started.${RESET}"
 echo -e "${GREEN}[+] Discord bot running and online.${RESET}"
 echo
 
-echo -e "${YELLOW}INFO:${RESET} If you have not already done so, add your Discord bot to your server."
+echo -e "${YELLOW}If you have not already done so, add your Discord bot to your server.${RESET}"
 echo
 
-echo -e "${YELLOW}INFO:${RESET} Before continuing with Assetto Corsa server setup, make sure all of your packed server tar.gz archives from Content Manager are uploaded to a github repository. Each tar.gz archive should be in it's own folder with any extra fast_lane.aip files you have for ai traffic."
+sleep .5
+
+clear
+echo -e "${YELLOW}"
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
+echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
+echo
 echo
 
-read -p "Enter GitHub repo URL containing Assetto Corsa server folders: " AC_ARCHIVES
+echo -e "${GREEN}[+] Discord bot running and online.${RESET}"
+echo
+
+echo -e "${YELLOW}If you have not already done so, add your Discord bot to your server.${RESET}"
+
+echo -e "${BLUE} Setting up Assetto Corsa server tracks ..."
+
+read -p "Enter GitHub repo URL containing Assetto Corsa track folders: " AC_ARCHIVES
 
 # Download Assetto Corsa track servers from CM
 echo -e "${BLUE}[>] Downloading Assetto Corsa track servers ...${RESET}"
@@ -286,8 +319,7 @@ spinner $!
 
 echo -e "${GREEN}[+] Track servers extracted and cleaned up.${RESET}"
 
-echo -e "${RED}WARNING:${RESET} The next part of this install includes a nested repo for AssettoServer." 
-echo "This has been community tested, but if you feel the need, now would be a good time to go review the nested repo for anything malicious."
+echo -e "${RED}WARNING:${RESET} This includes a community tested nested repo."
 echo 
 
 echo "https://github.com/compujuckel/AssettoServer/releases/tag/v0.0.54"
@@ -354,6 +386,24 @@ pct exec $CTID -- rm -f "/home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE"
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
+sleep .5
+
+clear
+echo -e "${YELLOW}"
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
+echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
+echo
+echo
+
+echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
+
 echo -e "${BLUE}[>] Running initial setup for each track server...${RESET}"
 
 pct exec $CTID -- bash -c "
@@ -382,98 +432,115 @@ pct exec $CTID -- bash -c "
 
 echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
 
+sleep .5
+
+clear
+echo -e "${YELLOW}"
+echo -e "    __  _______  _______________    ___   ______"
+echo -e "   /  |/  / __ \/  _/ ___/_  __/   /   | / ____/"
+echo -e "  / /|_/ / / / // / \__ \ / /_____/ /| |/ /     "
+echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
+echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
+echo
+echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
+echo
+echo
+
+echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
+
 # Individual Track Server Configuration
 
 echo -e "${BLUE}[>] Starting individual track configuration ...${RESET}"
 
-pct exec $CTID -- bash -c '
-for track_dir in /home/'"$USERNAME"'/assetto-servers/*/; do
-    [ -d "$track_dir" ] || continue
-    track_name=$(basename "$track_dir")
-    cfg_dir="$track_dir/cfg"
-    extra_cfg="$cfg_dir/extra_cfg.yml"
-    server_cfg="$cfg_dir/server_cfg.ini"
-    entry_list="$cfg_dir/entry_list.ini"
+pct exec $CTID -- bash -c "
+for track_dir in /home/$USERNAME/assetto-servers/*/; do
+    [ -d \"\$track_dir\" ] || continue
+    track_name=\$(basename \"\$track_dir\")
+    cfg_dir=\"\$track_dir/cfg\"
+    extra_cfg=\"\$cfg_dir/extra_cfg.yml\"
+    server_cfg=\"\$cfg_dir/server_cfg.ini\"
+    entry_list=\"\$cfg_dir/entry_list.ini\"
 
-    echo "-----------------------------------------"
-    echo "[Track] $track_name"
-    echo "-----------------------------------------"
+    echo \"-----------------------------------------\"
+    echo \"[Track] \$track_name\"
+    echo \"-----------------------------------------\"
 
     # --- Enable CSP WeatherFX ---
     while true; do
-        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p \"Enable CSP WeatherFX for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    sed -i "s/EnableWeatherFx: false/EnableWeatherFx: true/" "$extra_cfg"
-                    echo "[+] CSP WeatherFX enabled for $track_name"
+                if [ -f \"\$extra_cfg\" ]; then
+                    sed -i \"s/EnableWeatherFx: false/EnableWeatherFx: true/\" \"\$extra_cfg\"
+                    echo \"[+] CSP WeatherFX enabled for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    sed -i "s/EnableAi: false/EnableAi: true/" "$extra_cfg"
-                    echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
+                if [ -f \"\$extra_cfg\" ]; then
+                    sed -i \"s/EnableAi: false/EnableAi: true/\" \"\$extra_cfg\"
+                    echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
                 fi
 
-                if [ -f "$entry_list" ]; then
-                    echo "[>] Updating $entry_list for AI traffic..."
+                if [ -f \"\$entry_list\" ]; then
+                    echo \"[>] Updating \$entry_list for AI traffic...\"
 
-                    runuser -u "$USERNAME" -- bash -c "
-                        sed -i '/^AI=/d' \"$entry_list\"
+                    runuser -u $USERNAME -- bash -c '
+                        sed -i \"/^AI=/d\" \"$entry_list\"
 
                         tmpfile=\$(mktemp)
                         while IFS= read -r line; do
                             echo \"\$line\" >> \"\$tmpfile\"
                             if [[ \"\$line\" =~ ^MODEL= ]]; then
                                 if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                    echo 'AI=fixed' >> \"\$tmpfile\"
+                                    echo \"AI=fixed\" >> \"\$tmpfile\"
                                 else
-                                    echo 'AI=none' >> \"\$tmpfile\"
+                                    echo \"AI=none\" >> \"\$tmpfile\"
                                 fi
                             fi
                         done < \"$entry_list\"
                         mv \"\$tmpfile\" \"$entry_list\"
-                    "
+                    '
 
-                    echo "[+] AI traffic injected into $entry_list"
+                    echo \"[+] AI traffic injected into \$entry_list\"
                 else
-                    echo "[!] entry_list.ini not found for $track_name"
+                    echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
-
     # --- Append INFINITE=1 ---
-    if [ -f "$server_cfg" ]; then
-        echo "INFINITE=1" >> "$server_cfg"
-        echo "[+] Added INFINITE=1 to server_cfg.ini"
+    if [ -f \"\$server_cfg\" ]; then
+        echo \"INFINITE=1\" >> \"\$server_cfg\"
+        echo \"[+] Added INFINITE=1 to server_cfg.ini\"
     fi
 
     # --- Move fast_lane.aip if present ---
-    if [ -f "$track_dir/fast_lane.aip" ]; then
-        inner_track_dir=$(find "$track_dir/content/tracks" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-        if [ -n "$inner_track_dir" ]; then
-            dest="$inner_track_dir/ai"
-            mkdir -p "$dest"
-            mv "$track_dir/fast_lane.aip" "$dest/"
-            echo "[+] Moved fast_lane.aip into $dest"
+    if [ -f \"\$track_dir/fast_lane.aip\" ]; then
+        inner_track_dir=\$(find \"\$track_dir/content/tracks\" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -n \"\$inner_track_dir\" ]; then
+            dest=\"\$inner_track_dir/ai\"
+            mkdir -p \"\$dest\"
+            mv \"\$track_dir/fast_lane.aip\" \"\$dest/\"
+            echo \"[+] Moved fast_lane.aip into \$dest\"
         else
-            echo "[!] No track folder found inside $track_dir/content/tracks, skipping fast_lane.aip move."
+            echo \"[!] No track folder found inside \$track_dir/content/tracks, skipping fast_lane.aip move.\"
         fi
     fi
 done
-'
+"
 
 echo -e "${RED}COMPLETE${RESET}"
