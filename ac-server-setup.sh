@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.01"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.02"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -113,10 +113,21 @@ echo -e "${GREEN}[+] LXC Started.${RESET}"
 #     printf "    \b\b\b\b"
 # }
 
-echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-spinner $!
-echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+
+# UNCOMMENT AFTER TESTING
+
+# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+# spinner $!
+# echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+
+
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
@@ -332,9 +343,6 @@ pct exec $CTID -- bash -c "
         if [ -f \"\$track_dir/AssettoServer\" ]; then
             chmod +x \"\$track_dir/AssettoServer\"
         fi
-        # Fix ownership and permissions
-        chown -R $USERNAME:$USERNAME \"\$track_dir\"
-        chmod -R u+rw \"\$track_dir\"
     done
 "
 
@@ -351,15 +359,23 @@ pct exec $CTID -- bash -c "
         if [ -f \"\$track_dir/AssettoServer\" ]; then
             echo -e '${BLUE}[>] Starting initial setup for: ${RESET}' \$(basename \"\$track_dir\")
             cd \"\$track_dir\"
-            sudo -u $USERNAME ./AssettoServer > /dev/null 2>&1 &
-            SERVER_PID=\$!
+            runuser -l $USERNAME -c \"bash -c './AssettoServer > /dev/null 2>&1 & echo \$!'\" > /tmp/server_pid
+            SERVER_PID=\$(cat /tmp/server_pid)
             sleep 10
             kill \$SERVER_PID >/dev/null 2>&1 || true
+            rm -f /tmp/server_pid
             echo -e '${GREEN}[+] Initial setup complete for: ${RESET}' \$(basename \"\$track_dir\")
         fi
     done
 "
-pct exec $CTID -- bash -c "chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers"
+
+pct exec $CTID -- bash -c "
+    for track_dir in /home/$USERNAME/assetto-servers/*/; do
+        [ -d \"\$track_dir/cfg\" ] || continue
+        chown -R $USERNAME:$USERNAME \"\$track_dir/cfg\"
+        chmod -R u+rw \"\$track_dir/cfg\"
+    done
+"
 
 echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
 
