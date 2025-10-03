@@ -77,13 +77,27 @@ pct create $CTID $TEMPLATE \
 spinner $!
 echo -e "${GREEN}[+] LXC Created.${RESET}"
 
+# echo -e "${BLUE}[>] Starting LXC ...${RESET}"
+
+# # --- Start LXC ---
+# pct start $CTID
+# sleep 10
+
 echo -e "${BLUE}[>] Starting LXC ...${RESET}"
 
-# --- Start LXC ---
-pct start $CTID
-sleep 10
+# Start LXC in background
+pct start $CTID >/dev/null 2>&1 &
+spinner $!
+
+# Wait until container is really running
+while ! pct status $CTID | grep -q "running"; do
+    sleep 1
+done
 
 echo -e "${GREEN}[+] LXC Started.${RESET}"
+
+
+# echo -e "${GREEN}[+] LXC Started.${RESET}"
 
 # spinner() {
 #     local pid=$1
@@ -396,15 +410,11 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
                     echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
                 fi
 
-                # Now update entry_list.ini
                 entry_list=\"\$cfg_dir/entry_list.ini\"
                 if [ -f \"\$entry_list\" ]; then
                     echo \"[>] Updating \$entry_list for AI traffic...\"
-
-                    # Remove any existing AI= lines to avoid duplicates
                     sed -i '/^AI=/d' \"\$entry_list\"
 
-                    # Process each MODEL line
                     tmpfile=\$(mktemp)
                     while IFS= read -r line; do
                         echo \"\$line\" >> \"\$tmpfile\"
@@ -448,6 +458,5 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
     fi
 done
 "
-
 
 echo -e "${RED}COMPLETE${RESET}"
