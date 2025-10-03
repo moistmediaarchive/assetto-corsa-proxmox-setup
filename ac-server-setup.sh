@@ -386,65 +386,66 @@ echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESE
 
 echo -e "${BLUE}[>] Starting individual track configuration ...${RESET}"
 
-pct exec $CTID -- bash -c "
-for track_dir in /home/$USERNAME/assetto-servers/*/; do
-    [ -d \"\$track_dir\" ] || continue
-    track_name=\$(basename \"\$track_dir\")
-    cfg_dir=\"\$track_dir/cfg\"
-    extra_cfg=\"\$cfg_dir/extra_cfg.yml\"
-    server_cfg=\"\$cfg_dir/server_cfg.ini\"
+pct exec $CTID -- bash -c '
+for track_dir in /home/'"$USERNAME"'/assetto-servers/*/; do
+    [ -d "$track_dir" ] || continue
+    track_name=$(basename "$track_dir")
+    cfg_dir="$track_dir/cfg"
+    extra_cfg="$cfg_dir/extra_cfg.yml"
+    server_cfg="$cfg_dir/server_cfg.ini"
+    entry_list="$cfg_dir/entry_list.ini"
 
-    echo \"-----------------------------------------\"
-    echo -e \"${YELLOW}[Track] \$track_name${RESET}\"
-    echo \"-----------------------------------------\"
+    echo "-----------------------------------------"
+    echo "[Track] $track_name"
+    echo "-----------------------------------------"
 
     # --- Enable CSP WeatherFX ---
     while true; do
-        read -p \"Enable CSP WeatherFX for \$track_name? (y/n): \" ans
-        case \"\$ans\" in
+        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
+        case "$ans" in
             [Yy]* )
-                if [ -f \"\$extra_cfg\" ]; then
-                    sed -i \"s/EnableWeatherFx: false/EnableWeatherFx: true/\" \"\$extra_cfg\"
-                    echo \"[+] CSP WeatherFX enabled for \$track_name\"
+                if [ -f "$extra_cfg" ]; then
+                    sed -i "s/EnableWeatherFx: false/EnableWeatherFx: true/" "$extra_cfg"
+                    echo "[+] CSP WeatherFX enabled for $track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo \"[!] Please answer y or n.\" ;;
+            * ) echo "[!] Please answer y or n." ;;
         esac
     done
 
-       # --- Enable AI Traffic ---
+    # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
-        case "\$ans" in
+        read -p "Enable AI Traffic for $track_name? (y/n): " ans
+        case "$ans" in
             [Yy]* )
-                if [ -f "\$extra_cfg" ]; then
-                    sed -i "s/EnableAi: false/EnableAi: true/" "\$extra_cfg"
+                if [ -f "$extra_cfg" ]; then
+                    sed -i "s/EnableAi: false/EnableAi: true/" "$extra_cfg"
                     echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
                 fi
 
-                entry_list="\$cfg_dir/entry_list.ini"
-                if [ -f "\$entry_list" ]; then
-                    echo "[>] Updating \$entry_list for AI traffic..."
-                    runuser -l "$USERNAME" -c "bash -c '
-                        sed -i \"/^AI=/d\" \"\$entry_list\"
+                if [ -f "$entry_list" ]; then
+                    echo "[>] Updating $entry_list for AI traffic..."
+
+                    runuser -l '"$USERNAME"' -c "
+                        sed -i '/^AI=/d' '$entry_list'
 
                         tmpfile=\$(mktemp)
                         while IFS= read -r line; do
                             echo \"\$line\" >> \"\$tmpfile\"
                             if [[ \"\$line\" =~ ^MODEL= ]]; then
                                 if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                    echo \"AI=fixed\" >> \"\$tmpfile\"
+                                    echo 'AI=fixed' >> \"\$tmpfile\"
                                 else
-                                    echo \"AI=none\" >> \"\$tmpfile\"
+                                    echo 'AI=none' >> \"\$tmpfile\"
                                 fi
                             fi
-                        done < \"\$entry_list\"
-                        mv \"\$tmpfile\" \"\$entry_list\"
-                    '"
-                    echo "[+] AI traffic injected into \$entry_list"
+                        done < '$entry_list'
+                        mv \"\$tmpfile\" '$entry_list'
+                    "
+                    echo "[+] AI traffic injected into $entry_list"
                 else
-                    echo "[!] entry_list.ini not found for \$track_name"
+                    echo "[!] entry_list.ini not found for $track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
@@ -453,24 +454,24 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
     done
 
     # --- Append INFINITE=1 ---
-    if [ -f \"\$server_cfg\" ]; then
-        echo \"INFINITE=1\" >> \"\$server_cfg\"
-        echo \"[+] Added INFINITE=1 to server_cfg.ini\"
+    if [ -f "$server_cfg" ]; then
+        echo "INFINITE=1" >> "$server_cfg"
+        echo "[+] Added INFINITE=1 to server_cfg.ini"
     fi
 
     # --- Move fast_lane.aip if present ---
-    if [ -f \"\$track_dir/fast_lane.aip\" ]; then
-        inner_track_dir=\$(find \"\$track_dir/content/tracks\" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-        if [ -n \"\$inner_track_dir\" ]; then
-            dest=\"\$inner_track_dir/ai\"
-            mkdir -p \"\$dest\"
-            mv \"\$track_dir/fast_lane.aip\" \"\$dest/\"
-            echo \"[+] Moved fast_lane.aip into \$dest\"
+    if [ -f "$track_dir/fast_lane.aip" ]; then
+        inner_track_dir=$(find "$track_dir/content/tracks" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -n "$inner_track_dir" ]; then
+            dest="$inner_track_dir/ai"
+            mkdir -p "$dest"
+            mv "$track_dir/fast_lane.aip" "$dest/"
+            echo "[+] Moved fast_lane.aip into $dest"
         else
-            echo \"[!] No track folder found inside \$track_dir/content/tracks, skipping fast_lane.aip move.\"
+            echo "[!] No track folder found inside $track_dir/content/tracks, skipping fast_lane.aip move."
         fi
     fi
 done
-"
+'
 
 echo -e "${RED}COMPLETE${RESET}"
