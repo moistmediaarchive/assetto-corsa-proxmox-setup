@@ -270,6 +270,8 @@ pct exec $CTID -- bash -c "
     done
 " >/dev/null 2>&1 &
 
+pct exec $CTID -- bash -c "chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers"
+
 spinner $!
 
 echo -e "${GREEN}[+] Track servers extracted and cleaned up.${RESET}"
@@ -366,6 +368,7 @@ pct exec $CTID -- bash -c "
         fi
     done
 "
+pct exec $CTID -- bash -c "chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers"
 
 echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
 
