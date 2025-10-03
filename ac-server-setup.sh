@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.11"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -40,14 +40,14 @@ echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
 # --- Collect Inputs ---
 read -p "Enter preferred LXC ID: " CTID
-read -p "Enter preferred LXC IP address (e.g. 192.168.1.50/24): " IP
-read -p "Enter Gateway: " GATEWAY
+read -p "Enter preferred LXC IP address (e.g. 192.168.1.50/24, blank for DHCP): " IP
+read -p "Enter Gateway (leave blank for DHCP): " GATEWAY
 
 echo -e "${GREEN}[+] Setting up LXC...${RESET}"
 
 # --- Fixed LXC Spec ---
-HOSTNAME="assetto-corsa"
-MEMORY=16384
+HOSTNAME="moist-ac"
+MEMORY=8192
 CORES=4
 DISK="local-lvm:64"
 STORAGE="local"
@@ -68,14 +68,27 @@ if ! pveam list $STORAGE | grep -q "ubuntu-22.04-standard"; then
 fi
 
 echo -e "${BLUE}[>] Creating LXC ...${RESET}"
+
+# If user left IP empty, default to DHCP
+if [[ -z "$IP" ]]; then
+  NETCONFIG="name=eth0,bridge=vmbr0,ip=dhcp"
+else
+  NETCONFIG="name=eth0,bridge=vmbr0,ip=$IP"
+  # Add gateway only if provided
+  if [[ -n "$GATEWAY" ]]; then
+    NETCONFIG="$NETCONFIG,gw=$GATEWAY"
+  fi
+fi
+
 pct create $CTID $TEMPLATE \
   --hostname $HOSTNAME \
   --memory $MEMORY \
   --cores $CORES \
   --rootfs $DISK \
-  --net0 name=eth0,bridge=vmbr0,ip=$IP,gw=$GATEWAY \
+  --net0 "$NETCONFIG" \
   >/dev/null 2>&1 &
 spinner $!
+
 echo -e "${GREEN}[+] LXC Created.${RESET}"
 
 echo -e "${BLUE}[>] Starting LXC ...${RESET}"
@@ -139,7 +152,7 @@ echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
 
 sleep 1
 
-echo -e "${BLUE}[>] Setting up LXC admin user ..."
+echo -e "${BLUE}[>] Setting up LXC admin user ... ${RESET}"
 
 # --- Configure LXC User ---
 # Prompt until username is not empty
@@ -501,22 +514,23 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
                 if [ -f \"\$entry_list\" ]; then
                     echo \"[>] Updating \$entry_list for AI traffic...\"
 
-                    runuser -u $USERNAME -- bash -c '
-                        sed -i \"/^AI=/d\" \"$entry_list\"
+                runuser -u $USERNAME -- bash -c '
+                    entry_list="'"$entry_list"'"
+                    sed -i "/^AI=/d" "$entry_list"
 
-                        tmpfile=\$(mktemp)
-                        while IFS= read -r line; do
-                            echo \"\$line\" >> \"\$tmpfile\"
-                            if [[ \"\$line\" =~ ^MODEL= ]]; then
-                                if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                    echo \"AI=fixed\" >> \"\$tmpfile\"
-                                else
-                                    echo \"AI=none\" >> \"\$tmpfile\"
-                                fi
+                    tmpfile=$(mktemp)
+                    while IFS= read -r line; do
+                        echo "$line" >> "$tmpfile"
+                        if [[ "$line" =~ ^MODEL= ]]; then
+                            if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                echo "AI=fixed" >> "$tmpfile"
+                            else
+                                echo "AI=none" >> "$tmpfile"
                             fi
-                        done < \"$entry_list\"
-                        mv \"\$tmpfile\" \"$entry_list\"
-                    '
+                        fi
+                    done < "$entry_list"
+                    mv "$tmpfile" "$entry_list"
+                '
 
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
