@@ -98,19 +98,10 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
-
-
-
-#RE ENABLE AFTER TESTING
-
-# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-# spinner $!
-# echo -e "${GREEN}[+] LXC Updated.${RESET}"
-
-
-
-
+echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+spinner $!
+echo -e "${GREEN}[+] LXC Updated.${RESET}"
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
@@ -181,11 +172,7 @@ fi
 
 echo -e "${GREEN}[+] Discord bot files downloaded.${RESET}"
 
-# echo -e "${BLUE}[>] Setting up Discord bot ...${RESET}"
-
 # # Setup Python venv
-# pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME python3 -m venv venv && sudo -u $USERNAME ./venv/bin/pip install -r requirements.txt"
-
 echo -e "${BLUE}[>] Setting up Discord bot (installing requirements) ...${RESET}"
 
 pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && \
@@ -244,7 +231,7 @@ echo
 
 read -p "Enter GitHub repo URL containing Assetto Corsa server folders: " AC_ARCHIVES
 
-# Download Assetto Corsa track servers from CSP
+# Download Assetto Corsa track servers from CM
 if [[ $AC_ARCHIVES == *.git ]]; then
     pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME git clone $AC_ARCHIVES repo && mv repo/* . && rm -rf repo"
 else
@@ -279,7 +266,6 @@ while [ $attempt -le $MAX_ATTEMPTS ]; do
     case "$CONT_VAR" in
         [Yy]* )
             echo -e "${GREEN}[+] Continuing installation...${RESET}"
-            # <--- place your AssettoServer install steps here
             break
             ;;
         [Nn]* )
@@ -366,7 +352,7 @@ for track_dir in /home/'$USERNAME'/assetto-servers/*/; do
     server_cfg="$cfg_dir/server_cfg.ini"
 
     echo "-----------------------------------------"
-    echo "[Track] $track_name"
+    echo -e "${YELLOW}[Track] $track_name${RESET}"
     echo "-----------------------------------------"
 
     # --- Enable CSP WeatherFX ---
