@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e # exit on error
 
-GREEN="\e[32m"
-RED="\e[31m"
-YELLOW="\e[33m"
-BLUE="\e[34m"
-RESET="\e[0m"
+GREEN="\033[32m"
+RED="\033[31m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+RESET="\033[0m"
 
-echo "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
+echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
 # --- LXC Set Up ---
 
@@ -16,7 +16,7 @@ read -p "Enter preferred LXC ID: " CTID
 read -p "Enter preferred LXC IP address (e.g. 192.168.1.50/24): " IP
 read -p "Enter Gateway: " GATEWAY
 
-echo "${GREEN}[+] Setting up LXC...${RESET}"
+echo -e "${GREEN}[+] Setting up LXC...${RESET}"
 
 # --- Fixed LXC Spec ---
 HOSTNAME="assetto-corsa"
@@ -25,7 +25,7 @@ CORES=4
 DISK="local-lvm:64"
 STORAGE="local"
 
-echo "${BLUE}[>] Looking for latest Ubuntu template...${RESET}"
+echo -e "${BLUE}[>] Looking for latest Ubuntu template...${RESET}"
 
 # --- Find the latest Ubuntu 22.04 template available online ---
 LATEST_TEMPLATE=$(pveam available | grep "ubuntu-22.04-standard" | sort -V | tail -n 1 | awk '{print $2}')
@@ -36,11 +36,11 @@ TEMPLATE="$STORAGE:vztmpl/$TEMPLATE_NAME"
 
 # --- Download if missing ---
 if ! pveam list $STORAGE | grep -q "ubuntu-22.04-standard"; then
-    echo "${BLUE}[>] Downloading latest template: $TEMPLATE_NAME ${RESET}"
+    echo -e "${BLUE}[>] Downloading latest template: $TEMPLATE_NAME ${RESET}"
     pveam download $STORAGE $TEMPLATE_NAME
 fi
 
-echo "${BLUE}[>] Creating LXC...${RESET}"
+echo -e "${BLUE}[>] Creating LXC...${RESET}"
 
 # --- Create LXC ---
 pct create $CTID $TEMPLATE \
@@ -50,30 +50,46 @@ pct create $CTID $TEMPLATE \
   --rootfs $DISK \
   --net0 name=eth0,bridge=vmbr0,ip=$IP,gw=$GATEWAY
 
-echo "${GREEN}[+] LXC Created.${RESET}"
+echo -e "${GREEN}[+] LXC Created.${RESET}"
 
-echo "${BLUE}[>] Starting LXC...${RESET}"
+echo -e "${BLUE}[>] Starting LXC...${RESET}"
 
 # --- Start LXC ---
 pct start $CTID
 sleep 10
 
-echo "${GREEN}[+] LXC Started.${RESET}"
+echo -e "${GREEN}[+] LXC Started.${RESET}"
 
-echo "${BLUE}[>] Updating and getting LXC ready...${RESET}"
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    while ps -p $pid > /dev/null; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
 
-pct exec $CTID -- bash -c "apt-get update && apt-get -y upgrade"
-pct exec $CTID -- bash -c "apt-get install -y unzip python3-venv python3-pip git"
+echo -e "${BLUE}[>] Updating container...${RESET}"
+pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+spinner $!
+echo -e "${GREEN}[+] LXC Updated.${RESET}"
 
-
-echo "${GREEN}[+] LXC Updated.${RESET}"
+echo -e "${BLUE}[>] Installing dependencies...${RESET}"
+pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git" >/dev/null 2>&1 &
+spinner $!
+echo -e "${GREEN}[+] Dependencies installed.${RESET}"
 
 # --- Configure LXC User ---
 read -p "Enter desired username: " USERNAME
 read -s -p "Enter user password (hidden): " USERPASS
 echo
 
-echo "${BLUE}[>] Creating user...${RESET}"
+echo -e "${BLUE}[>] Creating user...${RESET}"
 
 pct exec $CTID -- bash -c "useradd -m -s /bin/bash $USERNAME"
 
@@ -84,7 +100,7 @@ pct exec $CTID -- bash -c "command -v visudo >/dev/null && echo '$USERNAME ALL=(
 # Create folders
 pct exec $CTID -- bash -c "mkdir -p /home/$USERNAME/assetto-servers /home/$USERNAME/discord-bot && chown -R $USERNAME:$USERNAME /home/$USERNAME"
 
-echo "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
+echo -e "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
 
 read -p "Enter GitHub repo zip URL for Discord bot: " BOT_REPO
 
@@ -93,7 +109,7 @@ echo
 
 read -p "Enter Discord Guild/Server ID: " GUILD_ID
 
-echo "${BLUE}[>] Downloading bot files..."
+echo -e "${BLUE}[>] Downloading bot files..."
 
 # Download bot repo
 if [[ $BOT_REPO == *.git ]]; then
@@ -102,9 +118,9 @@ else
     pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME wget -O bot.zip $BOT_REPO && sudo -u $USERNAME unzip bot.zip && rm bot.zip"
 fi
 
-echo "${GREEN}[+] Bot files downloaded.${RESET}"
+echo -e "${GREEN}[+] Bot files downloaded.${RESET}"
 
-echo "${BLUE}[>] Setting up Discord bot...${RESET}"
+echo -e "${BLUE}[>] Setting up Discord bot...${RESET}"
 
 # Setup Python venv
 pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME python3 -m venv venv && sudo -u $USERNAME ./venv/bin/pip install -r requirements.txt"
@@ -119,3 +135,29 @@ GUILD_ID=$GUILD_ID
 EOF"
 
 pct exec $CTID -- bash -c "chown $USERNAME:$USERNAME /home/$USERNAME/discord-bot/.env && chmod 600 /home/$USERNAME/discord-bot/.env"
+
+echo -e "${BLUE}[>] Creating systemd service for Discord bot...${RESET}"
+
+SERVICE_FILE="/etc/systemd/system/discord-bot.service"
+
+pct exec $CTID -- bash -c "cat > $SERVICE_FILE <<EOF
+[Unit]
+Description=Discord Bot for Assetto Corsa
+After=network.target
+
+[Service]
+Type=simple
+User=$USERNAME
+WorkingDirectory=/home/$USERNAME/discord-bot
+ExecStart=/home/$USERNAME/discord-bot/venv/bin/python3 /home/$USERNAME/discord-bot/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
+# Reload systemd, enable and start the service
+pct exec $CTID -- bash -c "systemctl daemon-reload && systemctl enable discord-bot && systemctl start discord-bot"
+
+echo -e "${GREEN}[+] Discord bot service created and started.${RESET}"
