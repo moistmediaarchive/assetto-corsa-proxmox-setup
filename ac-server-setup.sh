@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.11"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.12"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -41,7 +41,7 @@ echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 # --- Collect Inputs ---
 read -p "Enter preferred LXC ID: " CTID
 read -p "Enter preferred LXC IP address (e.g. 192.168.1.50/24, blank for DHCP): " IP
-read -p "Enter Gateway (leave blank for DHCP): " GATEWAY
+read -p "Enter Gateway (blank for DHCP): " GATEWAY
 
 echo -e "${GREEN}[+] Setting up LXC...${RESET}"
 
@@ -120,7 +120,7 @@ pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip
 spinner $!
 echo -e "${GREEN}[+] Dependencies installed.${RESET}"
 
-sleep .5
+sleep 1.5
 
 clear
 echo -e "${YELLOW}"
@@ -145,7 +145,7 @@ echo -e "${YELLOW}You must forward these ports on your router for the server to 
 
 pct exec $CTID -- bash -c "ufw allow OpenSSH && ufw allow 9600/tcp && ufw allow 9600/udp && ufw allow 8081/tcp && yes | ufw enable" >/dev/null 2>&1 &
 
-sleep 5 &
+sleep 10 &
 spinner $!
 
 echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
@@ -192,7 +192,7 @@ pct exec $CTID -- bash -c "mkdir -p /home/$USERNAME/assetto-servers /home/$USERN
 
 echo -e "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
 
-sleep .5
+sleep 1.5
 
 clear
 echo -e "${YELLOW}"
@@ -210,7 +210,7 @@ echo
 
 echo -e "${GREEN}[+] User $USERNAME created with sudo access (password required).${RESET}"
 
-echo -e "${BLUE}[>] Setting up Discord Bot ..."
+echo -e "${BLUE}[>] Setting up Discord Bot ... ${RESET}"
 
 read -p "Enter GitHub repo URL for Discord bot: " BOT_REPO
 
@@ -286,7 +286,7 @@ echo
 echo -e "${YELLOW}If you have not already done so, add your Discord bot to your server.${RESET}"
 echo
 
-sleep .5
+sleep 1.5
 
 clear
 echo -e "${YELLOW}"
@@ -307,7 +307,7 @@ echo
 
 echo -e "${YELLOW}If you have not already done so, add your Discord bot to your server.${RESET}"
 
-echo -e "${BLUE} Setting up Assetto Corsa server tracks ..."
+echo -e "${BLUE}[>] Setting up Assetto Corsa server tracks ... ${RESET}"
 
 read -p "Enter GitHub repo URL containing Assetto Corsa track folders: " AC_ARCHIVES
 
@@ -405,7 +405,7 @@ pct exec $CTID -- rm -f "/home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE"
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
-sleep .5
+sleep 1.5
 
 clear
 echo -e "${YELLOW}"
@@ -451,7 +451,7 @@ pct exec $CTID -- bash -c "
 
 echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
 
-sleep .5
+sleep 1.5
 
 clear
 echo -e "${YELLOW}"
@@ -501,43 +501,42 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
         esac
     done
 
-    # --- Enable AI Traffic ---
+        # --- Enable AI Traffic ---
     while true; do
-        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
-        case \"\$ans\" in
+        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
+        case "\$ans" in
             [Yy]* )
-                if [ -f \"\$extra_cfg\" ]; then
-                    sed -i \"s/EnableAi: false/EnableAi: true/\" \"\$extra_cfg\"
-                    
+                if [ -f "\$extra_cfg" ]; then
+                    sed -i "s/EnableAi: false/EnableAi: true/" "\$extra_cfg"
                 fi
 
-                if [ -f \"\$entry_list\" ]; then
-                    echo \"[>] Updating \$entry_list for AI traffic...\"
+                if [ -f "\$entry_list" ]; then
+                    echo "[>] Updating \$entry_list for AI traffic..."
 
-                runuser -u $USERNAME -- bash -c '
-                    entry_list="'"$entry_list"'"
-                    sed -i "/^AI=/d" "$entry_list"
+                    runuser -u $USERNAME -- bash -c "
+                        sed -i '/^AI=/d' \"\$entry_list\"
 
-                    tmpfile=$(mktemp)
-                    while IFS= read -r line; do
-                        echo "$line" >> "$tmpfile"
-                        if [[ "$line" =~ ^MODEL= ]]; then
-                            if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                echo "AI=fixed" >> "$tmpfile"
-                            else
-                                echo "AI=none" >> "$tmpfile"
+                        tmpfile=\$(mktemp)
+                        while IFS= read -r line; do
+                            echo \"\$line\" >> \"\$tmpfile\"
+                            if [[ \"\$line\" =~ ^MODEL= ]]; then
+                                if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                    echo 'AI=fixed' >> \"\$tmpfile\"
+                                else
+                                    echo 'AI=none' >> \"\$tmpfile\"
+                                fi
                             fi
-                        fi
-                    done < "$entry_list"
-                    mv "$tmpfile" "$entry_list"
-                '
+                        done < \"\$entry_list\"
+                        mv \"\$tmpfile\" \"\$entry_list\"
+                    "
 
+                    echo "[+] AI traffic injected into \$entry_list"
                 else
-                    echo \"[!] entry_list.ini not found for \$track_name\"
+                    echo "[!] entry_list.ini not found for \$track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo \"[!] Please answer y or n.\" ;;
+            * ) echo "[!] Please answer y or n." ;;
         esac
     done
 
