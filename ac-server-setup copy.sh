@@ -32,7 +32,7 @@ echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
-echo "version 1"
+echo "version 3"
 
 # --- LXC Set Up ---
 
@@ -117,9 +117,26 @@ spinner $!
 echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
 
 # --- Configure LXC User ---
-read -p "Enter desired username: " USERNAME
-read -s -p "Enter user password (hidden): " USERPASS
-echo
+# Prompt until username is not empty
+while true; do
+    read -p "Enter desired username: " USERNAME
+    if [[ -n "$USERNAME" ]]; then
+        break
+    else
+        echo -e "${RED}[!] Username cannot be empty. Please try again.${RESET}"
+    fi
+done
+
+# Prompt until password is not empty
+while true; do
+    read -s -p "Enter user password (hidden): " USERPASS
+    echo
+    if [[ -n "$USERPASS" ]]; then
+        break
+    else
+        echo -e "${RED}[!] Password cannot be empty. Please try again.${RESET}"
+    fi
+done
 
 echo -e "${BLUE}[>] Creating user ...${RESET}"
 
@@ -127,7 +144,10 @@ pct exec $CTID -- bash -c "useradd -m -s /bin/bash $USERNAME"
 
 pct exec $CTID -- bash -c "echo '$USERNAME:$USERPASS' | chpasswd"
 
-pct exec $CTID -- bash -c "command -v visudo >/dev/null && echo '$USERNAME ALL=(ALL:ALL) ALL' | EDITOR='tee -a' visudo || echo '${RED}$USERNAME ALL=(ALL:ALL) ALL${RESET}' >> /etc/sudoers"
+# Add to sudoers
+pct exec $CTID -- bash -c "command -v visudo >/dev/null && \
+    echo '$USERNAME ALL=(ALL:ALL) ALL' | EDITOR='tee -a' visudo || \
+    echo '$USERNAME ALL=(ALL:ALL) ALL' >> /etc/sudoers"
 
 # Create folders
 pct exec $CTID -- bash -c "mkdir -p /home/$USERNAME/assetto-servers /home/$USERNAME/discord-bot && chown -R $USERNAME:$USERNAME /home/$USERNAME"
@@ -376,11 +396,18 @@ for track_dir in /home/'$USERNAME'/assetto-servers/*/; do
     fi
 
     # --- Move fast_lane.aip if present ---
+    # --- Move fast_lane.aip if present ---
     if [ -f "$track_dir/fast_lane.aip" ]; then
-        dest="/home/'$USERNAME'/assetto-servers/$track_name/content/tracks/$track_name/ai"
-        mkdir -p "$dest"
-        mv "$track_dir/fast_lane.aip" "$dest/"
-        echo "[+] Moved fast_lane.aip into $dest"
+        # Find the first (and only) subfolder inside content/tracks
+        inner_track_dir=$(find "$track_dir/content/tracks" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -n "$inner_track_dir" ]; then
+            dest="$inner_track_dir/ai"
+            mkdir -p "$dest"
+            mv "$track_dir/fast_lane.aip" "$dest/"
+            echo "[+] Moved fast_lane.aip into $dest"
+        else
+            echo "[!] No track folder found inside $track_dir/content/tracks, skipping fast_lane.aip move."
+        fi
     fi
 done
 '
