@@ -7,15 +7,17 @@ YELLOW="\033[33m"
 BLUE="\033[34m"
 RESET="\033[0m"
 
+clear
+
 echo -e "${YELLOW}"
-echo "$$\      $$\  $$$$$$\  $$$$$$\  $$$$$$\ $$$$$$$$\       $$$$$$\   $$$$$$\ " 
-echo "$$$\    $$$ |$$  __$$\ \_$$  _|$$  __$$\\__$$  __|     $$  __$$\ $$  __$$\ "
-echo "$$$$\  $$$$ |$$ /  $$ |  $$ |  $$ /  \__|  $$ |        $$ /  $$ |$$ /  \__|"
-echo "$$\$$\$$ $$ |$$ |  $$ |  $$ |  \$$$$$$\    $$ |$$$$$$\ $$$$$$$$ |$$ |      "
-echo "$$ \$$$  $$ |$$ |  $$ |  $$ |   \____$$\   $$ |\______|$$  __$$ |$$ |      "
-echo "$$ |\$  /$$ |$$ |  $$ |  $$ |  $$\   $$ |  $$ |        $$ |  $$ |$$ |  $$\ "
-echo "$$ | \_/ $$ | $$$$$$  |$$$$$$\ \$$$$$$  |  $$ |        $$ |  $$ |\$$$$$$  |"
-echo "\__|     \__| \______/ \______| \______/   \__|        \__|  \__| \______/"
+echo -e "$$\      $$\  $$$$$$\  $$$$$$\  $$$$$$\ $$$$$$$$\       $$$$$$\   $$$$$$\ " 
+echo -e "$$$\    $$$ |$$  __$$\ \_$$  _|$$  __$$\\__$$  __|     $$  __$$\ $$  __$$\ "
+echo -e "$$$$\  $$$$ |$$ /  $$ |  $$ |  $$ /  \__|  $$ |        $$ /  $$ |$$ /  \__|"
+echo -e "$$\$$\$$ $$ |$$ |  $$ |  $$ |  \$$$$$$\    $$ |$$$$$$\ $$$$$$$$ |$$ |      "
+echo -e "$$ \$$$  $$ |$$ |  $$ |  $$ |   \____$$\   $$ |\______|$$  __$$ |$$ |      "
+echo -e "$$ |\$  /$$ |$$ |  $$ |  $$ |  $$\   $$ |  $$ |        $$ |  $$ |$$ |  $$\ "
+echo -e "$$ | \_/ $$ | $$$$$$  |$$$$$$\ \$$$$$$  |  $$ |        $$ |  $$ |\$$$$$$  |"
+echo -e "\__|     \__| \______/ \______| \______/   \__|        \__|  \__| \______/"
 echo 
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -220,8 +222,6 @@ echo
 echo "https://github.com/compujuckel/AssettoServer/releases/tag/v0.0.54"
 echo 
 
-read -p "Would you like to continue with the install? (Y/N): " CONT_VAR
-
 MAX_ATTEMPTS=3
 attempt=1
 while [ $attempt -le $MAX_ATTEMPTS ]; do
@@ -280,3 +280,85 @@ pct exec $CTID -- rm -f "/home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE"
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
+echo -e "${BLUE}[>] Running initial setup for each track server...${RESET}"
+
+pct exec $CTID -- bash -c "
+    for track_dir in /home/$USERNAME/assetto-servers/*/; do
+        [ -d \"\$track_dir\" ] || continue
+        if [ -f \"\$track_dir/AssettoServer\" ]; then
+            echo '[*] Starting initial setup for: ' \$(basename \"\$track_dir\")
+            cd \"\$track_dir\"
+            sudo -u $USERNAME ./AssettoServer > /dev/null 2>&1 &
+            SERVER_PID=\$!
+            sleep 10
+            kill \$SERVER_PID >/dev/null 2>&1 || true
+            echo '[+] Initial setup complete for: ' \$(basename \"\$track_dir\")
+        fi
+    done
+"
+
+echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
+
+# Individual Track Server Configuration
+
+echo -e "${BLUE}[>] Starting individual track configuration ...${RESET}"
+
+pct exec $CTID -- bash -c '
+for track_dir in /home/'$USERNAME'/assetto-servers/*/; do
+    [ -d "$track_dir" ] || continue
+    track_name=$(basename "$track_dir")
+    cfg_dir="$track_dir/cfg"
+    extra_cfg="$cfg_dir/extra_cfg.yml"
+    server_cfg="$cfg_dir/server_cfg.ini"
+
+    echo "-----------------------------------------"
+    echo "[Track] $track_name"
+    echo "-----------------------------------------"
+
+    # --- Enable CSP WeatherFX ---
+    while true; do
+        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
+        case "$ans" in
+            [Yy]* )
+                if [ -f "$extra_cfg" ]; then
+                    sed -i "s/EnableWeatherFx: false/EnableWeatherFx: true/" "$extra_cfg"
+                    echo "[+] CSP WeatherFX enabled for $track_name"
+                fi
+                break ;;
+            [Nn]* ) break ;;
+            * ) echo "[!] Please answer y or n." ;;
+        esac
+    done
+
+    # --- Enable AI Traffic ---
+    while true; do
+        read -p "Enable AI Traffic for $track_name? (y/n): " ans
+        case "$ans" in
+            [Yy]* )
+                if [ -f "$extra_cfg" ]; then
+                    sed -i "s/EnableAi: false/EnableAi: true/" "$extra_cfg"
+                    echo "[+] AI Traffic enabled for $track_name"
+                fi
+                break ;;
+            [Nn]* ) break ;;
+            * ) echo "[!] Please answer y or n." ;;
+        esac
+    done
+
+    # --- Append INFINITE=1 ---
+    if [ -f "$server_cfg" ]; then
+        echo "INFINITE=1" >> "$server_cfg"
+        echo "[+] Added INFINITE=1 to server_cfg.ini"
+    fi
+
+    # --- Move fast_lane.aip if present ---
+    if [ -f "$track_dir/fast_lane.aip" ]; then
+        dest="/home/'$USERNAME'/assetto-servers/$track_name/content/tracks/$track_name/ai"
+        mkdir -p "$dest"
+        mv "$track_dir/fast_lane.aip" "$dest/"
+        echo "[+] Moved fast_lane.aip into $dest"
+    fi
+done
+'
+
+echo "${RED}FINISHED${RESET}"
