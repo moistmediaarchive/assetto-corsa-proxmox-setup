@@ -32,6 +32,8 @@ echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
+echo "version 1"
+
 # --- LXC Set Up ---
 
 # --- Collect Inputs ---
@@ -102,9 +104,17 @@ spinner $!
 echo -e "${GREEN}[+] LXC Updated.${RESET}"
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
-pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git" >/dev/null 2>&1 &
+pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
 spinner $!
 echo -e "${GREEN}[+] Dependencies installed.${RESET}"
+# --- Firewall Setup ---
+echo -e "${BLUE}[>] Setting up firewall to allow SSH, and the ports required for Assetto Server ...${RESET}"
+echo -e "${YELLOW}INFO:${RESET} Assetto Corsa requires ports 9600/tcp/udp and 8081/tcp"
+echo -e "${RED}WARNING:${RESET} You will need to port forward these ports on your router, this can open your server up to attacks"
+echo "if not configured correctly."
+pct exec $CTID -- bash -c "ufw allow OpenSSH && ufw allow 9600/tcp && ufw allow 9600/udp && ufw allow 8081/tcp && yes | ufw enable" >/dev/null 2>&1 &
+spinner $!
+echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
 
 # --- Configure LXC User ---
 read -p "Enter desired username: " USERNAME
