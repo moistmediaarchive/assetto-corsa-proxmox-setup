@@ -489,7 +489,7 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
             [Yy]* )
                 if [ -f \"\$extra_cfg\" ]; then
                     sed -i \"s/EnableAi: false/EnableAi: true/\" \"\$extra_cfg\"
-                    echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
+                    
                 fi
 
                 if [ -f \"\$entry_list\" ]; then
@@ -512,7 +512,6 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
                         mv \"\$tmpfile\" \"$entry_list\"
                     '
 
-                    echo \"[+] AI traffic injected into \$entry_list\"
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
