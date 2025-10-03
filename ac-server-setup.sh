@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.02"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.03"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -335,10 +335,10 @@ echo -e "${BLUE}[>] Copying and extracting AssettoServer into each track folder.
 pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
         [ -d \"\$track_dir\" ] || continue
-        cp /home/$USERNAME/assetto-servers/\$ASSETTOSERVER_FILE \"\$track_dir\"
+        cp /home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE \"\$track_dir\"
         cd \"\$track_dir\"
-        sudo tar --no-same-owner -xzf \"\$ASSETTOSERVER_FILE\"
-        rm -f \"\$ASSETTOSERVER_FILE\"
+        sudo tar --no-same-owner -xzf $ASSETTOSERVER_FILE
+        rm -f $ASSETTOSERVER_FILE
         # make sure the binary is executable
         if [ -f \"\$track_dir/AssettoServer\" ]; then
             chmod +x \"\$track_dir/AssettoServer\"
