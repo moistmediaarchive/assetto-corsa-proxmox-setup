@@ -206,9 +206,9 @@ read -p "Enter GitHub repo URL containing Assetto Corsa server folders: " AC_ARC
 
 # Download Assetto Corsa track servers from CSP
 if [[ $AC_ARCHIVES == *.git ]]; then
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME git clone $BOT_REPO repo && mv repo/* . && rm -rf repo"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME git clone $AC_ARCHIVES repo && mv repo/* . && rm -rf repo"
 else
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -O bot.zip $BOT_REPO && sudo -u $USERNAME unzip bot.zip && rm bot.zip"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -O bot.zip $AC_ARCHIVES && sudo -u $USERNAME unzip bot.zip && rm bot.zip"
 fi
 
 echo -e "${BLUE}[>] Extracting Assetto Corsa track server packs ...${RESET}"
