@@ -424,7 +424,7 @@ for track_dir in /home/'"$USERNAME"'/assetto-servers/*/; do
                     echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
                 fi
 
-                if [ -f "$entry_list" ]; then
+            if [ -f "$entry_list" ]; then
                 echo "[>] Updating $entry_list for AI traffic..."
 
                 sed -i '/^AI=/d' "$entry_list"
