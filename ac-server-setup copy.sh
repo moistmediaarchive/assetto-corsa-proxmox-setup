@@ -98,10 +98,19 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
-echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-spinner $!
-echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+#RE ENABLE AFTER TESTING
+
+# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+# spinner $!
+# echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
@@ -330,13 +339,13 @@ pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
         [ -d \"\$track_dir\" ] || continue
         if [ -f \"\$track_dir/AssettoServer\" ]; then
-            echo '[*] Starting initial setup for: ' \$(basename \"\$track_dir\")
+            echo -e '${BLUE}[>] Starting initial setup for: ${RESET}' \$(basename \"\$track_dir\")
             cd \"\$track_dir\"
             sudo -u $USERNAME ./AssettoServer > /dev/null 2>&1 &
             SERVER_PID=\$!
             sleep 10
             kill \$SERVER_PID >/dev/null 2>&1 || true
-            echo '[+] Initial setup complete for: ' \$(basename \"\$track_dir\")
+            echo -e '${GREEN}[+] Initial setup complete for: ${RESET}' \$(basename \"\$track_dir\")
         fi
     done
 "
