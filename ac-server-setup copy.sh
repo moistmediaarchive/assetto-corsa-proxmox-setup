@@ -201,6 +201,7 @@ DISCORD_TOKEN=$BOT_TOKEN
 SERVER_BASE=/home/$USERNAME/assetto-servers
 CONTROLLER_SCRIPT=/home/$USERNAME/discord-bot/server_controller.py
 STATE_FILE=/home/$USERNAME/discord-bot/last_server.json
+PID_FILE=/home/$USERNAME/discord-bot/current_server.pid
 GUILD_ID=$GUILD_ID
 EOF"
 
@@ -220,8 +221,8 @@ Type=simple
 User=$USERNAME
 WorkingDirectory=/home/$USERNAME/discord-bot
 ExecStart=/home/$USERNAME/discord-bot/venv/bin/python3 /home/$USERNAME/discord-bot/main.py
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
