@@ -388,69 +388,66 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
-
-        case "$ans" in
+        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    sed -i "s/EnableAi: false/EnableAi: true/" "$extra_cfg"
-                    echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
+                if [ -f \"\$extra_cfg\" ]; then
+                    sed -i \"s/EnableAi: false/EnableAi: true/\" \"\$extra_cfg\"
+                    echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
                 fi
 
                 # Now update entry_list.ini
-                entry_list="$cfg_dir/entry_list.ini"
-                if [ -f "$entry_list" ]; then
-                    echo "[>] Updating $entry_list for AI traffic..."
+                entry_list=\"\$cfg_dir/entry_list.ini\"
+                if [ -f \"\$entry_list\" ]; then
+                    echo \"[>] Updating \$entry_list for AI traffic...\"
 
                     # Remove any existing AI= lines to avoid duplicates
-                    sed -i '/^AI=/d' "$entry_list"
+                    sed -i '/^AI=/d' \"\$entry_list\"
 
                     # Process each MODEL line
-                    tmpfile=$(mktemp)
+                    tmpfile=\$(mktemp)
                     while IFS= read -r line; do
-                        echo "$line" >> "$tmpfile"
-                        if [[ "$line" =~ ^MODEL= ]]; then
-                            if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                echo "AI=fixed" >> "$tmpfile"
+                        echo \"\$line\" >> \"\$tmpfile\"
+                        if [[ \"\$line\" =~ ^MODEL= ]]; then
+                            if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                echo \"AI=fixed\" >> \"\$tmpfile\"
                             else
-                                echo "AI=none" >> "$tmpfile"
+                                echo \"AI=none\" >> \"\$tmpfile\"
                             fi
                         fi
-                    done < "$entry_list"
-                    mv "$tmpfile" "$entry_list"
+                    done < \"\$entry_list\"
+                    mv \"\$tmpfile\" \"\$entry_list\"
 
-                    echo "[+] AI traffic injected into entry_list.ini"
+                    echo \"[+] AI traffic injected into entry_list.ini\"
                 else
-                    echo "[!] entry_list.ini not found for $track_name"
+                    echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
-
     # --- Append INFINITE=1 ---
-    if [ -f "$server_cfg" ]; then
-        echo "INFINITE=1" >> "$server_cfg"
-        echo "[+] Added INFINITE=1 to server_cfg.ini"
+    if [ -f \"\$server_cfg\" ]; then
+        echo \"INFINITE=1\" >> \"\$server_cfg\"
+        echo \"[+] Added INFINITE=1 to server_cfg.ini\"
     fi
 
     # --- Move fast_lane.aip if present ---
-    # --- Move fast_lane.aip if present ---
-    if [ -f "$track_dir/fast_lane.aip" ]; then
-        # Find the first (and only) subfolder inside content/tracks
-        inner_track_dir=$(find "$track_dir/content/tracks" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-        if [ -n "$inner_track_dir" ]; then
-            dest="$inner_track_dir/ai"
-            mkdir -p "$dest"
-            mv "$track_dir/fast_lane.aip" "$dest/"
-            echo "[+] Moved fast_lane.aip into $dest"
+    if [ -f \"\$track_dir/fast_lane.aip\" ]; then
+        inner_track_dir=\$(find \"\$track_dir/content/tracks\" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -n \"\$inner_track_dir\" ]; then
+            dest=\"\$inner_track_dir/ai\"
+            mkdir -p \"\$dest\"
+            mv \"\$track_dir/fast_lane.aip\" \"\$dest/\"
+            echo \"[+] Moved fast_lane.aip into \$dest\"
         else
-            echo "[!] No track folder found inside $track_dir/content/tracks, skipping fast_lane.aip move."
+            echo \"[!] No track folder found inside \$track_dir/content/tracks, skipping fast_lane.aip move.\"
         fi
     fi
 done
-'
+"
+
 
 echo -e "${RED}COMPLETE${RESET}"
