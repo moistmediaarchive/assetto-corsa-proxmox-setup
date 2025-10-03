@@ -32,7 +32,7 @@ echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
-echo "version 4"
+echo "version 5"
 
 # --- LXC Set Up ---
 
@@ -391,13 +391,41 @@ for track_dir in /home/'$USERNAME'/assetto-servers/*/; do
             [Yy]* )
                 if [ -f "$extra_cfg" ]; then
                     sed -i "s/EnableAi: false/EnableAi: true/" "$extra_cfg"
-                    echo "[+] AI Traffic enabled for $track_name"
+                    echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
+                fi
+
+                # Now update entry_list.ini
+                entry_list="$cfg_dir/entry_list.ini"
+                if [ -f "$entry_list" ]; then
+                    echo "[>] Updating $entry_list for AI traffic..."
+
+                    # Remove any existing AI= lines to avoid duplicates
+                    sed -i '/^AI=/d' "$entry_list"
+
+                    # Process each MODEL line
+                    tmpfile=$(mktemp)
+                    while IFS= read -r line; do
+                        echo "$line" >> "$tmpfile"
+                        if [[ "$line" =~ ^MODEL= ]]; then
+                            if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                echo "AI=fixed" >> "$tmpfile"
+                            else
+                                echo "AI=none" >> "$tmpfile"
+                            fi
+                        fi
+                    done < "$entry_list"
+                    mv "$tmpfile" "$entry_list"
+
+                    echo "[+] AI traffic injected into entry_list.ini"
+                else
+                    echo "[!] entry_list.ini not found for $track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
             * ) echo "[!] Please answer y or n." ;;
         esac
     done
+
 
     # --- Append INFINITE=1 ---
     if [ -f "$server_cfg" ]; then
