@@ -91,10 +91,16 @@ done
 
 echo -e "${GREEN}[+] LXC Started.${RESET}"
 
-echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
-pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
-spinner $!
-echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
+# echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
+# pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
+# spinner $!
+# echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
+
+
 
 echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git ufw" >/dev/null 2>&1 &
