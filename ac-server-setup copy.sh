@@ -32,7 +32,7 @@ echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
 
-echo "version 3"
+echo "version 4"
 
 # --- LXC Set Up ---
 
