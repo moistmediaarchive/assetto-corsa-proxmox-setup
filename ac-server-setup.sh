@@ -30,9 +30,10 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.0"
+echo
+echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
-
-echo "version 5"
 
 # --- LXC Set Up ---
 
@@ -84,19 +85,19 @@ sleep 10
 
 echo -e "${GREEN}[+] LXC Started.${RESET}"
 
-spinner() {
-    local pid=$1
-    local delay=0.1
-    local spinstr='|/-\'
-    while ps -p $pid > /dev/null; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+# spinner() {
+#     local pid=$1
+#     local delay=0.1
+#     local spinstr='|/-\'
+#     while ps -p $pid > /dev/null; do
+#         local temp=${spinstr#?}
+#         printf " [%c]  " "$spinstr"
+#         spinstr=$temp${spinstr%"$temp"}
+#         sleep $delay
+#         printf "\b\b\b\b\b\b"
+#     done
+#     printf "    \b\b\b\b"
+# }
 
 echo -e "${BLUE}[>] Updating container - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
@@ -108,10 +109,10 @@ pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip
 spinner $!
 echo -e "${GREEN}[+] Dependencies installed.${RESET}"
 # --- Firewall Setup ---
-echo -e "${BLUE}[>] Setting up firewall to allow SSH, and the ports required for Assetto Server ...${RESET}"
+echo -e "${RED}[>] Setting up firewall to allow SSH, and the ports required for Assetto Server ...${RESET}"
 echo -e "${YELLOW}INFO:${RESET} Assetto Corsa requires ports 9600/tcp/udp and 8081/tcp"
-echo -e "${RED}WARNING:${RESET} You will need to port forward these ports on your router, this can open your server up to attacks"
-echo "if not configured correctly."
+echo -e "${RED}WARNING:${RESET} You will need to port forward these ports on your router, this can open"
+echo " your server up to attacks if not configured correctly."
 pct exec $CTID -- bash -c "ufw allow OpenSSH && ufw allow 9600/tcp && ufw allow 9600/udp && ufw allow 8081/tcp && yes | ufw enable" >/dev/null 2>&1 &
 spinner $!
 echo -e "${GREEN}[+] Firewall setup complete.${RESET}"
@@ -165,10 +166,12 @@ echo -e "${BLUE}[>] Downloading Discord bot files ..."
 
 # Download bot repo
 if [[ $BOT_REPO == *.git ]]; then
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME git clone $BOT_REPO repo && mv repo/* . && rm -rf repo"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME git clone $BOT_REPO repo && mv repo/* . && rm -rf repo" >/dev/null 2>&1 &
 else
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME wget -O bot.zip $BOT_REPO && sudo -u $USERNAME unzip bot.zip && rm bot.zip"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/discord-bot && sudo -u $USERNAME wget -q -O bot.zip $BOT_REPO && sudo -u $USERNAME unzip bot.zip && rm bot.zip" >/dev/null 2>&1 &
 fi
+
+spinner $!
 
 echo -e "${GREEN}[+] Discord bot files downloaded.${RESET}"
 
@@ -386,6 +389,7 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
     # --- Enable AI Traffic ---
     while true; do
         read -p "Enable AI Traffic for \$track_name? (y/n): " ans
+
         case "$ans" in
             [Yy]* )
                 if [ -f "$extra_cfg" ]; then
