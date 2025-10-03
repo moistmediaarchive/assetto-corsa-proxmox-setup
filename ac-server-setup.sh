@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.03"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.05"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -420,28 +420,32 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
                     echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
                 fi
 
-                entry_list=\"\$cfg_dir/entry_list.ini\"
-                if [ -f \"\$entry_list\" ]; then
-                    echo \"[>] Updating \$entry_list for AI traffic...\"
-                    sed -i '/^AI=/d' \"\$entry_list\"
+        entry_list="$cfg_dir/entry_list.ini"
+        if [ -f "$entry_list" ]; then
+            echo "[>] Updating $entry_list for AI traffic..."
+            runuser -l $USERNAME -c "
+                sed -i '/^AI=/d' '$entry_list'
 
-                    tmpfile=\$(mktemp)
-                    while IFS= read -r line; do
-                        echo \"\$line\" >> \"\$tmpfile\"
-                        if [[ \"\$line\" =~ ^[Mm][Oo][Dd][Ee][Ll]= ]]; then
-                            if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                echo \"AI=fixed\" >> \"\$tmpfile\"
-                            else
-                                echo \"AI=none\" >> \"\$tmpfile\"
-                            fi
+                tmpfile=\$(mktemp)
+                while IFS= read -r line; do
+                    echo \"\$line\" >> \"\$tmpfile\"
+                    if [[ \"\$line\" =~ ^MODEL= ]]; then
+                        if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                            echo \"AI=fixed\" >> \"\$tmpfile\"
+                        else
+                            echo \"AI=none\" >> \"\$tmpfile\"
                         fi
-                    done < \"\$entry_list\"
-                    mv \"\$tmpfile\" \"\$entry_list\"
+                    fi
+                done < '$entry_list'
+                mv \"\$tmpfile\" '$entry_list'
+            "
+            echo "[+] AI traffic injected into $entry_list"
+        else
+            echo "[!] entry_list.ini not found for $track_name"
+        fi
 
-                    echo \"[+] AI traffic injected into entry_list.ini\"
-                else
-                    echo \"[!] entry_list.ini not found for \$track_name\"
-                fi
+
+
                 break ;;
             [Nn]* ) break ;;
             * ) echo \"[!] Please answer y or n.\" ;;
