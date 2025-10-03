@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e # exit on error
+set -e
 
 GREEN="\033[32m"
 RED="\033[31m"
@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.12"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.13"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -471,10 +471,16 @@ echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESE
 
 # Individual Track Server Configuration
 
-echo -e "${BLUE}[>] Starting individual track configuration ...${RESET}"
+echo -e "${BLUE}[>] Preparing track configuration script inside container...${RESET}"
 
-pct exec $CTID -- bash -c "
-for track_dir in /home/$USERNAME/assetto-servers/*/; do
+CONFIG_SCRIPT="/root/configure_tracks.sh"
+
+pct exec $CTID -- bash -c "cat > $CONFIG_SCRIPT <<'EOF'
+#!/bin/bash
+
+USERNAME=\"$USERNAME\"
+
+for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     [ -d \"\$track_dir\" ] || continue
     track_name=\$(basename \"\$track_dir\")
     cfg_dir=\"\$track_dir/cfg\"
@@ -492,7 +498,11 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
         case \"\$ans\" in
             [Yy]* )
                 if [ -f \"\$extra_cfg\" ]; then
-                    sed -i \"s/EnableWeatherFx: false/EnableWeatherFx: true/\" \"\$extra_cfg\"
+                    if grep -q '^EnableWeatherFx:' \"\$extra_cfg\"; then
+                        sed -i 's/EnableWeatherFx: false/EnableWeatherFx: true/' \"\$extra_cfg\"
+                    else
+                        echo 'EnableWeatherFx: true' >> \"\$extra_cfg\"
+                    fi
                     echo \"[+] CSP WeatherFX enabled for \$track_name\"
                 fi
                 break ;;
@@ -501,42 +511,42 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
         esac
     done
 
-        # --- Enable AI Traffic ---
+    # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
-        case "\$ans" in
+        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "\$extra_cfg" ]; then
-                    sed -i "s/EnableAi: false/EnableAi: true/" "\$extra_cfg"
+                if [ -f \"\$extra_cfg\" ]; then
+                    if grep -q '^EnableAi:' \"\$extra_cfg\"; then
+                        sed -i 's/EnableAi: false/EnableAi: true/' \"\$extra_cfg\"
+                    else
+                        echo 'EnableAi: true' >> \"\$extra_cfg\"
+                    fi
                 fi
 
-                if [ -f "\$entry_list" ]; then
-                    echo "[>] Updating \$entry_list for AI traffic..."
+                if [ -f \"\$entry_list\" ]; then
+                    echo \"[>] Updating \$entry_list for AI traffic...\"
+                    sed -i '/^AI=/d' \"\$entry_list\"
 
-                    runuser -u $USERNAME -- bash -c "
-                        sed -i '/^AI=/d' \"\$entry_list\"
-
-                        tmpfile=\$(mktemp)
-                        while IFS= read -r line; do
-                            echo \"\$line\" >> \"\$tmpfile\"
-                            if [[ \"\$line\" =~ ^MODEL= ]]; then
-                                if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                    echo 'AI=fixed' >> \"\$tmpfile\"
-                                else
-                                    echo 'AI=none' >> \"\$tmpfile\"
-                                fi
+                    tmpfile=\$(mktemp)
+                    while IFS= read -r line; do
+                        echo \"\$line\" >> \"\$tmpfile\"
+                        if [[ \"\$line\" =~ ^MODEL= ]]; then
+                            if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                echo 'AI=fixed' >> \"\$tmpfile\"
+                            else
+                                echo 'AI=none' >> \"\$tmpfile\"
                             fi
-                        done < \"\$entry_list\"
-                        mv \"\$tmpfile\" \"\$entry_list\"
-                    "
-
-                    echo "[+] AI traffic injected into \$entry_list"
+                        fi
+                    done < \"\$entry_list\"
+                    mv \"\$tmpfile\" \"\$entry_list\"
+                    echo \"[+] AI traffic injected into \$entry_list\"
                 else
-                    echo "[!] entry_list.ini not found for \$track_name"
+                    echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
@@ -559,6 +569,15 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
         fi
     fi
 done
+EOF
+chmod +x $CONFIG_SCRIPT
 "
 
+# Run the script interactively as root inside the container
+pct exec $CTID -- bash $CONFIG_SCRIPT
+
+# Fix permissions after configuration
+pct exec $CTID -- chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers
+
 echo -e "${RED}COMPLETE${RESET}"
+
