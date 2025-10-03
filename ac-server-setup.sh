@@ -424,35 +424,36 @@ for track_dir in /home/'"$USERNAME"'/assetto-servers/*/; do
                     echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
                 fi
 
-            if [ -f "$entry_list" ]; then
-                echo "[>] Updating $entry_list for AI traffic..."
+                if [ -f "$entry_list" ]; then
+                    echo "[>] Updating $entry_list for AI traffic..."
 
-                sed -i '/^AI=/d' "$entry_list"
+                    runuser -u "$USERNAME" -- bash -c "
+                        sed -i '/^AI=/d' \"$entry_list\"
 
-                tmpfile=$(mktemp)
-                while IFS= read -r line; do
-                    echo "$line" >> "$tmpfile"
-                    if [[ "$line" =~ ^MODEL= ]]; then
-                        if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                            echo 'AI=fixed' >> "$tmpfile"
-                        else
-                            echo 'AI=none' >> "$tmpfile"
-                        fi
-                    fi
-                done < "$entry_list"
-                mv "$tmpfile" "$entry_list"
+                        tmpfile=\$(mktemp)
+                        while IFS= read -r line; do
+                            echo \"\$line\" >> \"\$tmpfile\"
+                            if [[ \"\$line\" =~ ^MODEL= ]]; then
+                                if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                    echo 'AI=fixed' >> \"\$tmpfile\"
+                                else
+                                    echo 'AI=none' >> \"\$tmpfile\"
+                                fi
+                            fi
+                        done < \"$entry_list\"
+                        mv \"\$tmpfile\" \"$entry_list\"
+                    "
 
-                chown $USERNAME:$USERNAME "$entry_list"
-                echo "[+] AI traffic injected into $entry_list"
-            else
-                echo "[!] entry_list.ini not found for $track_name"
-            fi
-
+                    echo "[+] AI traffic injected into $entry_list"
+                else
+                    echo "[!] entry_list.ini not found for $track_name"
+                fi
                 break ;;
             [Nn]* ) break ;;
             * ) echo "[!] Please answer y or n." ;;
         esac
     done
+
 
     # --- Append INFINITE=1 ---
     if [ -f "$server_cfg" ]; then
