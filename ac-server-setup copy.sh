@@ -101,7 +101,7 @@ pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/n
 spinner $!
 echo -e "${GREEN}[+] LXC Updated.${RESET}"
 
-echo -e "${BLUE}[>] Installing dependencies ...${RESET}"
+echo -e "${BLUE}[>] Installing dependencies - this may take some time ...${RESET}"
 pct exec $CTID -- bash -c "apt-get -qq install -y unzip python3-venv python3-pip git" >/dev/null 2>&1 &
 spinner $!
 echo -e "${GREEN}[+] Dependencies installed.${RESET}"
@@ -225,7 +225,8 @@ spinner $!
 
 echo -e "${GREEN}[+] Track servers extracted and cleaned up.${RESET}"
 
-echo -e "${RED}WARNING:${RESET} The next part of this install includes a nested repo for AssettoServer. This has been community tested, but if you feel the need, now would be a good time to go review the nested repo for anything malicious."
+echo -e "${RED}WARNING:${RESET} The next part of this install includes a nested repo for AssettoServer." 
+echo "This has been community tested, but if you feel the need, now would be a good time to go review the nested repo for anything malicious."
 echo 
 
 echo "https://github.com/compujuckel/AssettoServer/releases/tag/v0.0.54"
@@ -260,8 +261,8 @@ fi
 # Confirmed continue
 echo -e "${BLUE}[>] Downloading AssettoServer release...${RESET}"
 
-ASSETTOSERVER_URL="https://github.com/compujuckel/AssettoServer/releases/download/v0.0.54/AssettoServer.linux-x64.tar.gz"
-ASSETTOSERVER_FILE="AssettoServer.linux-x64.tar.gz"
+ASSETTOSERVER_URL="https://github.com/compujuckel/AssettoServer/releases/download/v0.0.54/assetto-server-linux-x64.tar.gz"
+ASSETTOSERVER_FILE="assetto-server-linux-x64.tar.gz"
 
 # safer download (show error if fails)
 if ! pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -q $ASSETTOSERVER_URL -O $ASSETTOSERVER_FILE"; then
