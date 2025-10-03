@@ -385,7 +385,7 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for $track_name? (y/n): " ans
+        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
         case "$ans" in
             [Yy]* )
                 if [ -f "$extra_cfg" ]; then
