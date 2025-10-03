@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.05"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.06"
 echo
 echo
 echo -e "${GREEN}[+] Welcome to the Assetto Corsa server setup wizard.${RESET}"
@@ -260,11 +260,16 @@ echo
 read -p "Enter GitHub repo URL containing Assetto Corsa server folders: " AC_ARCHIVES
 
 # Download Assetto Corsa track servers from CM
+echo -e "${BLUE}[>] Downloading Assetto Corsa track servers ...${RESET}"
+
 if [[ $AC_ARCHIVES == *.git ]]; then
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME git clone $AC_ARCHIVES repo && mv repo/* . && rm -rf repo"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME git clone $AC_ARCHIVES repo && mv repo/* . && rm -rf repo" >/dev/null 2>&1 &
 else
-    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -O bot.zip $AC_ARCHIVES && sudo -u $USERNAME unzip bot.zip && rm bot.zip"
+    pct exec $CTID -- bash -c "cd /home/$USERNAME/assetto-servers && sudo -u $USERNAME wget -q -O bot.zip $AC_ARCHIVES && sudo -u $USERNAME unzip bot.zip && rm bot.zip" >/dev/null 2>&1 &
 fi
+
+spinner $!
+echo -e "${GREEN}[+] Assetto Corsa track servers downloaded.${RESET}"
 
 echo -e "${BLUE}[>] Extracting Assetto Corsa track server packs ...${RESET}"
 
@@ -276,8 +281,6 @@ pct exec $CTID -- bash -c "
         rm -f \"\$archive\"
     done
 " >/dev/null 2>&1 &
-
-pct exec $CTID -- bash -c "chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers"
 
 spinner $!
 
@@ -410,45 +413,42 @@ for track_dir in /home/$USERNAME/assetto-servers/*/; do
         esac
     done
 
-    # --- Enable AI Traffic ---
+       # --- Enable AI Traffic ---
     while true; do
-        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
-        case \"\$ans\" in
+        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
+        case "\$ans" in
             [Yy]* )
-                if [ -f \"\$extra_cfg\" ]; then
-                    sed -i \"s/EnableAi: false/EnableAi: true/\" \"\$extra_cfg\"
-                    echo \"[+] CSP extra_cfg.yml updated: AI Traffic enabled\"
+                if [ -f "\$extra_cfg" ]; then
+                    sed -i "s/EnableAi: false/EnableAi: true/" "\$extra_cfg"
+                    echo "[+] CSP extra_cfg.yml updated: AI Traffic enabled"
                 fi
 
-        entry_list="$cfg_dir/entry_list.ini"
-        if [ -f "$entry_list" ]; then
-            echo "[>] Updating $entry_list for AI traffic..."
-            runuser -l $USERNAME -c "
-                sed -i '/^AI=/d' '$entry_list'
+                entry_list="\$cfg_dir/entry_list.ini"
+                if [ -f "\$entry_list" ]; then
+                    echo "[>] Updating \$entry_list for AI traffic..."
+                    runuser -l "$USERNAME" -c "bash -c '
+                        sed -i \"/^AI=/d\" \"\$entry_list\"
 
-                tmpfile=\$(mktemp)
-                while IFS= read -r line; do
-                    echo \"\$line\" >> \"\$tmpfile\"
-                    if [[ \"\$line\" =~ ^MODEL= ]]; then
-                        if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                            echo \"AI=fixed\" >> \"\$tmpfile\"
-                        else
-                            echo \"AI=none\" >> \"\$tmpfile\"
-                        fi
-                    fi
-                done < '$entry_list'
-                mv \"\$tmpfile\" '$entry_list'
-            "
-            echo "[+] AI traffic injected into $entry_list"
-        else
-            echo "[!] entry_list.ini not found for $track_name"
-        fi
-
-
-
+                        tmpfile=\$(mktemp)
+                        while IFS= read -r line; do
+                            echo \"\$line\" >> \"\$tmpfile\"
+                            if [[ \"\$line\" =~ ^MODEL= ]]; then
+                                if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                    echo \"AI=fixed\" >> \"\$tmpfile\"
+                                else
+                                    echo \"AI=none\" >> \"\$tmpfile\"
+                                fi
+                            fi
+                        done < \"\$entry_list\"
+                        mv \"\$tmpfile\" \"\$entry_list\"
+                    '"
+                    echo "[+] AI traffic injected into \$entry_list"
+                else
+                    echo "[!] entry_list.ini not found for \$track_name"
+                fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo \"[!] Please answer y or n.\" ;;
+            * ) echo "[!] Please answer y or n." ;;
         esac
     done
 
