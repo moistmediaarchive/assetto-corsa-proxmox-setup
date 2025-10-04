@@ -495,20 +495,20 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     echo \"[Track] \$track_name\"
     echo \"-----------------------------------------\"
 
-        # --- Enable CSP WeatherFX ---
+       # --- Enable CSP WeatherFX ---
     while true; do
-        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p "Enable CSP WeatherFX for \$track_name? (y/n): " ans
+        case "\$ans" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    if grep -qi 'EnableWeatherFx' "$extra_cfg"; then
-                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' "$extra_cfg"
+                if [ -f "\$extra_cfg" ]; then
+                    if grep -qi 'EnableWeatherFx' "\$extra_cfg"; then
+                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' "\$extra_cfg"
                     else
-                        echo 'EnableWeatherFx: true' >> "$extra_cfg"
+                        echo 'EnableWeatherFx: true' >> "\$extra_cfg"
                     fi
-                    echo "[+] CSP WeatherFX enabled for $track_name"
+                    echo "[+] CSP WeatherFX enabled for \$track_name"
                 else
-                    echo "[!] No extra_cfg.yml found for $track_name"
+                    echo "[!] No extra_cfg.yml found for \$track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
@@ -518,18 +518,18 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
+        case "\$ans" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    if grep -qi 'EnableAi' "$extra_cfg"; then
-                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' "$extra_cfg"
+                if [ -f "\$extra_cfg" ]; then
+                    if grep -qi 'EnableAi' "\$extra_cfg"; then
+                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' "\$extra_cfg"
                     else
-                        echo 'EnableAi: true' >> "$extra_cfg"
+                        echo 'EnableAi: true' >> "\$extra_cfg"
                     fi
-                    echo "[+] CSP AI enabled for $track_name"
+                    echo "[+] CSP AI enabled for \$track_name"
                 else
-                    echo "[!] No extra_cfg.yml found for $track_name"
+                    echo "[!] No extra_cfg.yml found for \$track_name"
                 fi
 
                 if [ -f \"\$entry_list\" ]; then
