@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.13"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.10"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -111,6 +111,7 @@ echo -e "${GREEN}[+] LXC Started.${RESET}"
 # pct exec $CTID -- bash -c "apt-get -qq update && apt-get -qq -y upgrade" >/dev/null 2>&1 &
 # spinner $!
 # echo -e "${GREEN}[+] LXC Updated.${RESET}"
+
 
 
 
@@ -391,12 +392,22 @@ pct exec $CTID -- bash -c "
         [ -d \"\$track_dir\" ] || continue
         cp /home/$USERNAME/assetto-servers/$ASSETTOSERVER_FILE \"\$track_dir\"
         cd \"\$track_dir\"
-        sudo tar --no-same-owner -xzf $ASSETTOSERVER_FILE
+
+        # Extract as the correct user (not root!)
+        runuser -l $USERNAME -c \"tar --no-same-owner -xzf $ASSETTOSERVER_FILE\" || {
+            echo '[!] Failed to extract AssettoServer in' \"\$track_dir\"
+            continue
+        }
+
         rm -f $ASSETTOSERVER_FILE
-        # make sure the binary is executable
+
         if [ -f \"\$track_dir/AssettoServer\" ]; then
             chmod +x \"\$track_dir/AssettoServer\"
         fi
+
+        # Fix ownership
+        chown -R $USERNAME:$USERNAME \"\$track_dir\"
+        chmod -R u+rw \"\$track_dir\"
     done
 "
 
@@ -423,33 +434,33 @@ echo
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
-echo -e "${BLUE}[>] Running initial setup for each track server...${RESET}"
+echo -e "${BLUE}[>] Running initial setup for each track server - this may take some time if you have many tracks...${RESET}"
 
 pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
         [ -d \"\$track_dir\" ] || continue
         if [ -f \"\$track_dir/AssettoServer\" ]; then
-            echo -e '${BLUE}[>] Starting initial setup for: ${RESET}' \$(basename \"\$track_dir\")
+            echo -e '${BLUE}[>] Starting initial setup for:${RESET}' \$(basename \"\$track_dir\")
             cd \"\$track_dir\"
-            runuser -l $USERNAME -c \"bash -c './AssettoServer > /dev/null 2>&1 & echo \$!'\" > /tmp/server_pid
-            SERVER_PID=\$(cat /tmp/server_pid)
-            sleep 10
+
+            runuser -l $USERNAME -c \"cd '$track_dir' && ./AssettoServer --once\" &
+            SERVER_PID=\$!
+
+            # Wait until cfg/extra_cfg.yml appears or timeout
+            for i in {1..30}; do
+                if [ -f \"\$track_dir/cfg/extra_cfg.yml\" ]; then
+                    break
+                fi
+                sleep 2
+            done
+
             kill \$SERVER_PID >/dev/null 2>&1 || true
-            rm -f /tmp/server_pid
-            echo -e '${GREEN}[+] Initial setup complete for: ${RESET}' \$(basename \"\$track_dir\")
+            wait \$SERVER_PID 2>/dev/null || true
+
+            echo -e '${GREEN}[+] Initial setup complete for:${RESET}' \$(basename \"\$track_dir\")
         fi
     done
 "
-
-pct exec $CTID -- bash -c "
-    for track_dir in /home/$USERNAME/assetto-servers/*/; do
-        [ -d \"\$track_dir/cfg\" ] || continue
-        chown -R $USERNAME:$USERNAME \"\$track_dir/cfg\"
-        chmod -R u+rw \"\$track_dir/cfg\"
-    done
-"
-
-echo -e "${GREEN}[+] All track servers have completed their initial setup.${RESET}"
 
 sleep 1.5
 
@@ -498,12 +509,14 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
         case \"\$ans\" in
             [Yy]* )
                 if [ -f \"\$extra_cfg\" ]; then
-                    if grep -q '^EnableWeatherFx:' \"\$extra_cfg\"; then
-                        sed -i 's/EnableWeatherFx: false/EnableWeatherFx: true/' \"\$extra_cfg\"
+                    if grep -qi 'EnableWeatherFx' \"\$extra_cfg\"; then
+                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' \"\$extra_cfg\"
                     else
                         echo 'EnableWeatherFx: true' >> \"\$extra_cfg\"
                     fi
                     echo \"[+] CSP WeatherFX enabled for \$track_name\"
+                else
+                    echo \"[!] No extra_cfg.yml found for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
@@ -517,15 +530,36 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
         case \"\$ans\" in
             [Yy]* )
                 if [ -f \"\$extra_cfg\" ]; then
-                    if grep -q '^EnableAi:' \"\$extra_cfg\"; then
-                        sed -i 's/EnableAi: false/EnableAi: true/' \"\$extra_cfg\"
+                    if grep -qi 'EnableAi' \"\$extra_cfg\"; then
+                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' \"\$extra_cfg\"
                     else
                         echo 'EnableAi: true' >> \"\$extra_cfg\"
                     fi
+                    echo \"[+] CSP AI enabled for \$track_name\"
+
+                    # --- Ask about TwoWayTraffic ---
+                    while true; do
+                        read -p \"Enable TwoWayTraffic for \$track_name? (y/n): \" two_ans
+                        case \"\$two_ans\" in
+                            [Yy]* )
+                                if grep -qi 'TwoWayTraffic' \"\$extra_cfg\"; then
+                                    sed -i -E 's/[Tt]wo[Ww]ay[Tt]raffic[[:space:]]*[:=][[:space:]]*(false|0)/TwoWayTraffic: true/I' \"\$extra_cfg\"
+                                else
+                                    echo 'TwoWayTraffic: true' >> \"\$extra_cfg\"
+                                fi
+                                echo \"[+] TwoWayTraffic enabled for \$track_name\"
+                                break ;;
+                            [Nn]* ) break ;;
+                            * ) echo \"[!] Please answer y or n.\" ;;
+                        esac
+                    done
+
+                else
+                    echo \"[!] No extra_cfg.yml found for \$track_name\"
                 fi
 
+                # --- Inject AI config into entry_list.ini if exists ---
                 if [ -f \"\$entry_list\" ]; then
-                    echo \"[>] Updating \$entry_list for AI traffic...\"
                     sed -i '/^AI=/d' \"\$entry_list\"
 
                     tmpfile=\$(mktemp)
@@ -540,7 +574,7 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
                         fi
                     done < \"\$entry_list\"
                     mv \"\$tmpfile\" \"\$entry_list\"
-                    echo \"[+] AI traffic injected into \$entry_list\"
+                    echo \"[+] AI traffic injected into entry_list.ini\"
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
@@ -579,4 +613,14 @@ pct exec $CTID -- bash $CONFIG_SCRIPT
 # Fix permissions after configuration
 pct exec $CTID -- chown -R $USERNAME:$USERNAME /home/$USERNAME/assetto-servers
 
-echo -e "${RED}COMPLETE${RESET}"
+echo
+echo
+echo
+
+echo -e "${GREEN} +++ SERVER SETUP COMPLETE +++ ${RESET}"
+echo -e "${YELLOW}Remember to port forward ports 9600/tcp/udp and 8081/tcp on your router${RESET}"
+echo -e "${YELLOW}The server will not work without port forwarding.${RESET}"
+
+echo
+echo -e "${GREEN} +++ Happy Racing! +++ ${RESET}"
+
