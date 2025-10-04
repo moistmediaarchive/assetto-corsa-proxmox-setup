@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.12"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.13"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -478,124 +478,126 @@ echo -e "${BLUE}[>] Preparing track configuration script inside container...${RE
 
 CONFIG_SCRIPT="/root/configure_tracks.sh"
 
+# Write script into container with placeholder
 pct exec $CTID -- bash -c "cat > $CONFIG_SCRIPT <<'EOF'
 #!/bin/bash
 
-USERNAME="$USERNAME"
+USERNAME=__REPLACE__
 
-for track_dir in /home/$USERNAME/assetto-servers/*/; do
-    [ -d "$track_dir" ] || continue
-    track_name=$(basename "$track_dir")
-    cfg_dir="$track_dir/cfg"
-    extra_cfg="$cfg_dir/extra_cfg.yml"
-    server_cfg="$cfg_dir/server_cfg.ini"
-    entry_list="$cfg_dir/entry_list.ini"
+for track_dir in /home/\$USERNAME/assetto-servers/*/; do
+    [ -d \"\$track_dir\" ] || continue
+    track_name=\$(basename \"\$track_dir\")
+    cfg_dir=\"\$track_dir/cfg\"
+    extra_cfg=\"\$cfg_dir/extra_cfg.yml\"
+    server_cfg=\"\$cfg_dir/server_cfg.ini\"
+    entry_list=\"\$cfg_dir/entry_list.ini\"
 
-    echo "-----------------------------------------"
-    echo "[Track] $track_name"
-    echo "-----------------------------------------"
+    echo \"-----------------------------------------\"
+    echo \"[Track] \$track_name\"
+    echo \"-----------------------------------------\"
 
     # --- Enable CSP WeatherFX ---
     while true; do
-        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p \"Enable CSP WeatherFX for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    if grep -q '^[[:space:]]*EnableWeatherFx:' "$extra_cfg"; then
-                        sed -i 's/^[[:space:]]*EnableWeatherFx:.*/EnableWeatherFx: true/' "$extra_cfg"
+                if [ -f \"\$extra_cfg\" ]; then
+                    if grep -q '^[[:space:]]*EnableWeatherFx:' \"\$extra_cfg\"; then
+                        sed -i 's/^[[:space:]]*EnableWeatherFx:.*/EnableWeatherFx: true/' \"\$extra_cfg\"
                     else
-                        echo 'EnableWeatherFx: true' >> "$extra_cfg"
+                        echo 'EnableWeatherFx: true' >> \"\$extra_cfg\"
                     fi
-                    echo "[+] CSP WeatherFX enabled for $track_name"
+                    echo \"[+] CSP WeatherFX enabled for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for $track_name? (y/n): " ans
-        case "$ans" in
+        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "$extra_cfg" ]; then
-                    if grep -q '^[[:space:]]*EnableAi:' "$extra_cfg"; then
-                        sed -i 's/^[[:space:]]*EnableAi:.*/EnableAi: true/' "$extra_cfg"
+                if [ -f \"\$extra_cfg\" ]; then
+                    if grep -q '^[[:space:]]*EnableAi:' \"\$extra_cfg\"; then
+                        sed -i 's/^[[:space:]]*EnableAi:.*/EnableAi: true/' \"\$extra_cfg\"
                     else
-                        echo 'EnableAi: true' >> "$extra_cfg"
+                        echo 'EnableAi: true' >> \"\$extra_cfg\"
                     fi
-                    echo "[+] EnableAi set to true in extra_cfg.yml"
+                    echo \"[+] EnableAi set to true in extra_cfg.yml\"
                 fi
 
-                if [ -f "$entry_list" ]; then
-                    sed -i '/^AI=/d' "$entry_list"
+                if [ -f \"\$entry_list\" ]; then
+                    sed -i '/^AI=/d' \"\$entry_list\"
 
-                    tmpfile=$(mktemp)
+                    tmpfile=\$(mktemp)
                     while IFS= read -r line; do
-                        echo "$line" >> "$tmpfile"
-                        if [[ "$line" =~ ^MODEL= ]]; then
-                            if [[ "$line" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
-                                echo 'AI=fixed' >> "$tmpfile"
+                        echo \"\$line\" >> \"\$tmpfile\"
+                        if [[ \"\$line\" =~ ^MODEL= ]]; then
+                            if [[ \"\$line\" =~ [Tt][Rr][Aa][Ff][Ff][Ii][Cc] ]]; then
+                                echo 'AI=fixed' >> \"\$tmpfile\"
                             else
-                                echo 'AI=none' >> "$tmpfile"
+                                echo 'AI=none' >> \"\$tmpfile\"
                             fi
                         fi
-                    done < "$entry_list"
-                    mv "$tmpfile" "$entry_list"
-                    echo "[+] AI traffic injected into $entry_list"
+                    done < \"\$entry_list\"
+                    mv \"\$tmpfile\" \"\$entry_list\"
+                    echo \"[+] AI traffic injected into \$entry_list\"
                 else
-                    echo "[!] entry_list.ini not found for $track_name"
+                    echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
 
                 # --- Prompt for TwoWayTraffic ---
                 while true; do
-                    read -p "Enable Two Way Traffic for $track_name? (y/n): " tw_ans
-                    case "$tw_ans" in
+                    read -p \"Enable Two Way Traffic for \$track_name? (y/n): \" tw_ans
+                    case \"\$tw_ans\" in
                         [Yy]* )
-                            if [ -f "$extra_cfg" ]; then
-                                if grep -q '^[[:space:]]*TwoWayTraffic:' "$extra_cfg"; then
-                                    sed -i 's/^[[:space:]]*TwoWayTraffic:.*/TwoWayTraffic: true/' "$extra_cfg"
+                            if [ -f \"\$extra_cfg\" ]; then
+                                if grep -q '^[[:space:]]*TwoWayTraffic:' \"\$extra_cfg\"; then
+                                    sed -i 's/^[[:space:]]*TwoWayTraffic:.*/TwoWayTraffic: true/' \"\$extra_cfg\"
                                 else
-                                    echo 'TwoWayTraffic: true' >> "$extra_cfg"
+                                    echo 'TwoWayTraffic: true' >> \"\$extra_cfg\"
                                 fi
-                                echo "[+] TwoWayTraffic set to true in extra_cfg.yml"
+                                echo \"[+] TwoWayTraffic set to true in extra_cfg.yml\"
                             fi
                             break ;;
                         [Nn]* ) break ;;
-                        * ) echo "[!] Please answer y or n." ;;
+                        * ) echo \"[!] Please answer y or n.\" ;;
                     esac
                 done
 
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
     # --- Append INFINITE=1 ---
-    if [ -f "$server_cfg" ]; then
-        grep -qxF "INFINITE=1" "$server_cfg" || echo "INFINITE=1" >> "$server_cfg"
-        echo "[+] Ensured INFINITE=1 is present in server_cfg.ini"
+    if [ -f \"\$server_cfg\" ]; then
+        grep -qxF \"INFINITE=1\" \"\$server_cfg\" || echo \"INFINITE=1\" >> \"\$server_cfg\"
+        echo \"[+] Ensured INFINITE=1 is present in server_cfg.ini\"
     fi
 
     # --- Move fast_lane.aip if present ---
-    if [ -f "$track_dir/fast_lane.aip" ]; then
-        inner_track_dir=$(find "$track_dir/content/tracks" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-        if [ -n "$inner_track_dir" ]; then
-            dest="$inner_track_dir/ai"
-            mkdir -p "$dest"
-            mv "$track_dir/fast_lane.aip" "$dest/"
-            echo "[+] Moved fast_lane.aip into $dest"
+    if [ -f \"\$track_dir/fast_lane.aip\" ]; then
+        inner_track_dir=\$(find \"\$track_dir/content/tracks\" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -n \"\$inner_track_dir\" ]; then
+            dest=\"\$inner_track_dir/ai\"
+            mkdir -p \"\$dest\"
+            mv \"\$track_dir/fast_lane.aip\" \"\$dest/\"
+            echo \"[+] Moved fast_lane.aip into \$dest\"
         else
-            echo "[!] No track folder found inside $track_dir/content/tracks, skipping fast_lane.aip move."
+            echo \"[!] No track folder found inside \$track_dir/content/tracks, skipping fast_lane.aip move.\"
         fi
     fi
 done
-
 EOF
-chmod +x $CONFIG_SCRIPT
-"
+chmod +x $CONFIG_SCRIPT"
+
+# Replace placeholder with actual username safely
+pct exec $CTID -- sed -i "s|__REPLACE__|$USERNAME|" $CONFIG_SCRIPT
 
 # Run the script interactively as root inside the container
 pct exec $CTID -- bash $CONFIG_SCRIPT
