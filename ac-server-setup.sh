@@ -424,20 +424,31 @@ echo
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
-echo -e "${BLUE}[>] Running initial setup for each track server...${RESET}"
+echo -e "${BLUE}[>] Running initial setup for each track server - this may take some time if you have many tracks...${RESET}"
 
 pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
         [ -d \"\$track_dir\" ] || continue
         if [ -f \"\$track_dir/AssettoServer\" ]; then
-            echo -e '${BLUE}[>] Starting initial setup for: ${RESET}' \$(basename \"\$track_dir\")
+            echo -e '${BLUE}[>] Starting initial setup for:${RESET}' \$(basename \"\$track_dir\")
             cd \"\$track_dir\"
+
             runuser -l $USERNAME -c \"bash -c './AssettoServer > /dev/null 2>&1 & echo \$!'\" > /tmp/server_pid
             SERVER_PID=\$(cat /tmp/server_pid)
-            sleep 10
+
+            # Wait until extra_cfg.yml is generated or timeout
+            for i in {1..30}; do
+                if [ -f \"\$track_dir/cfg/extra_cfg.yml\" ]; then
+                    break
+                fi
+                sleep 2
+            done
+
+            # Kill the server now that config exists
             kill \$SERVER_PID >/dev/null 2>&1 || true
             rm -f /tmp/server_pid
-            echo -e '${GREEN}[+] Initial setup complete for: ${RESET}' \$(basename \"\$track_dir\")
+
+            echo -e '${GREEN}[+] Initial setup complete for:${RESET}' \$(basename \"\$track_dir\")
         fi
     done
 " >/dev/null 2>&1 &
