@@ -495,45 +495,63 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     echo \"[Track] \$track_name\"
     echo \"-----------------------------------------\"
 
-       # --- Enable CSP WeatherFX ---
+    # --- Enable CSP WeatherFX ---
     while true; do
-        read -p "Enable CSP WeatherFX for \$track_name? (y/n): " ans
-        case "\$ans" in
+        read -p \"Enable CSP WeatherFX for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "\$extra_cfg" ]; then
-                    if grep -qi 'EnableWeatherFx' "\$extra_cfg"; then
-                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' "\$extra_cfg"
+                if [ -f \"\$extra_cfg\" ]; then
+                    if grep -qi 'EnableWeatherFx' \"\$extra_cfg\"; then
+                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' \"\$extra_cfg\"
                     else
-                        echo 'EnableWeatherFx: true' >> "\$extra_cfg"
+                        echo 'EnableWeatherFx: true' >> \"\$extra_cfg\"
                     fi
-                    echo "[+] CSP WeatherFX enabled for \$track_name"
+                    echo \"[+] CSP WeatherFX enabled for \$track_name\"
                 else
-                    echo "[!] No extra_cfg.yml found for \$track_name"
+                    echo \"[!] No extra_cfg.yml found for \$track_name\"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo "[!] Please answer y or n." ;;
+            * ) echo \"[!] Please answer y or n.\" ;;
         esac
     done
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p "Enable AI Traffic for \$track_name? (y/n): " ans
-        case "\$ans" in
+        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
+        case \"\$ans\" in
             [Yy]* )
-                if [ -f "\$extra_cfg" ]; then
-                    if grep -qi 'EnableAi' "\$extra_cfg"; then
-                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' "\$extra_cfg"
+                if [ -f \"\$extra_cfg\" ]; then
+                    if grep -qi 'EnableAi' \"\$extra_cfg\"; then
+                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' \"\$extra_cfg\"
                     else
-                        echo 'EnableAi: true' >> "\$extra_cfg"
+                        echo 'EnableAi: true' >> \"\$extra_cfg\"
                     fi
-                    echo "[+] CSP AI enabled for \$track_name"
+                    echo \"[+] CSP AI enabled for \$track_name\"
+
+                    # --- Ask about TwoWayTraffic ---
+                    while true; do
+                        read -p \"Enable TwoWayTraffic for \$track_name? (y/n): \" two_ans
+                        case \"\$two_ans\" in
+                            [Yy]* )
+                                if grep -qi 'TwoWayTraffic' \"\$extra_cfg\"; then
+                                    sed -i -E 's/[Tt]wo[Ww]ay[Tt]raffic[[:space:]]*[:=][[:space:]]*(false|0)/TwoWayTraffic: true/I' \"\$extra_cfg\"
+                                else
+                                    echo 'TwoWayTraffic: true' >> \"\$extra_cfg\"
+                                fi
+                                echo \"[+] TwoWayTraffic enabled for \$track_name\"
+                                break ;;
+                            [Nn]* ) break ;;
+                            * ) echo \"[!] Please answer y or n.\" ;;
+                        esac
+                    done
+
                 else
-                    echo "[!] No extra_cfg.yml found for \$track_name"
+                    echo \"[!] No extra_cfg.yml found for \$track_name\"
                 fi
 
+                # --- Inject AI config into entry_list.ini if exists ---
                 if [ -f \"\$entry_list\" ]; then
-
                     sed -i '/^AI=/d' \"\$entry_list\"
 
                     tmpfile=\$(mktemp)
@@ -548,7 +566,7 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
                         fi
                     done < \"\$entry_list\"
                     mv \"\$tmpfile\" \"\$entry_list\"
-                    echo \"[+] AI traffic injected into \$entry_list\"
+                    echo \"[+] AI traffic injected into entry_list.ini\"
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
