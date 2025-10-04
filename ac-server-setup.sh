@@ -30,7 +30,7 @@ echo -e " / /  / / /_/ // / ___/ // /_____/ ___ / /___   "
 echo -e "/_/  /_/\____/___//____//_/     /_/  |_\____/   ${RESET}"
 echo
 echo
-echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.13"
+echo -e "${YELLOW}Moist AC Server and Discord Bot Auto Setup${RESET} - version 1.12"
 echo -e "${YELLOW}Read the documentation if you need help: <link placeholder>"
 echo
 echo
@@ -424,7 +424,7 @@ echo
 
 echo -e "${GREEN}[+] AssettoServer deployed and permissions set in each track folder.${RESET}"
 
-echo -e "${BLUE}[>] Running initial setup for each track - this may take some time...${RESET}"
+echo -e "${BLUE}[>] Running initial setup for each track server...${RESET}"
 
 pct exec $CTID -- bash -c "
     for track_dir in /home/$USERNAME/assetto-servers/*/; do
@@ -478,11 +478,10 @@ echo -e "${BLUE}[>] Preparing track configuration script inside container...${RE
 
 CONFIG_SCRIPT="/root/configure_tracks.sh"
 
-# Write script into container with placeholder
 pct exec $CTID -- bash -c "cat > $CONFIG_SCRIPT <<'EOF'
 #!/bin/bash
 
-USERNAME=__REPLACE__
+USERNAME=\"$USERNAME\"
 
 for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     [ -d \"\$track_dir\" ] || continue
@@ -496,40 +495,45 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     echo \"[Track] \$track_name\"
     echo \"-----------------------------------------\"
 
-    # --- Enable CSP WeatherFX ---
+        # --- Enable CSP WeatherFX ---
     while true; do
-        read -p \"Enable CSP WeatherFX for \$track_name? (y/n): \" ans
-        case \"\$ans\" in
+        read -p "Enable CSP WeatherFX for $track_name? (y/n): " ans
+        case "$ans" in
             [Yy]* )
-                if [ -f \"\$extra_cfg\" ]; then
-                    if grep -q '^[[:space:]]*EnableWeatherFx:' \"\$extra_cfg\"; then
-                        sed -i 's/^[[:space:]]*EnableWeatherFx:.*/EnableWeatherFx: true/' \"\$extra_cfg\"
+                if [ -f "$extra_cfg" ]; then
+                    if grep -qi 'EnableWeatherFx' "$extra_cfg"; then
+                        sed -i -E 's/[Ee]nable[Ww]eather[Ff]x[[:space:]]*[:=][[:space:]]*(false|0)/EnableWeatherFx: true/I' "$extra_cfg"
                     else
-                        echo 'EnableWeatherFx: true' >> \"\$extra_cfg\"
+                        echo 'EnableWeatherFx: true' >> "$extra_cfg"
                     fi
-                    echo \"[+] CSP WeatherFX enabled for \$track_name\"
+                    echo "[+] CSP WeatherFX enabled for $track_name"
+                else
+                    echo "[!] No extra_cfg.yml found for $track_name"
                 fi
                 break ;;
             [Nn]* ) break ;;
-            * ) echo \"[!] Please answer y or n.\" ;;
+            * ) echo "[!] Please answer y or n." ;;
         esac
     done
 
     # --- Enable AI Traffic ---
     while true; do
-        read -p \"Enable AI Traffic for \$track_name? (y/n): \" ans
-        case \"\$ans\" in
+        read -p "Enable AI Traffic for $track_name? (y/n): " ans
+        case "$ans" in
             [Yy]* )
-                if [ -f \"\$extra_cfg\" ]; then
-                    if grep -q '^[[:space:]]*EnableAi:' \"\$extra_cfg\"; then
-                        sed -i 's/^[[:space:]]*EnableAi:.*/EnableAi: true/' \"\$extra_cfg\"
+                if [ -f "$extra_cfg" ]; then
+                    if grep -qi 'EnableAi' "$extra_cfg"; then
+                        sed -i -E 's/[Ee]nable[Aa][Ii][[:space:]]*[:=][[:space:]]*(false|0)/EnableAi: true/I' "$extra_cfg"
                     else
-                        echo 'EnableAi: true' >> \"\$extra_cfg\"
+                        echo 'EnableAi: true' >> "$extra_cfg"
                     fi
-                    echo \"[+] EnableAi set to true in extra_cfg.yml\"
+                    echo "[+] CSP AI enabled for $track_name"
+                else
+                    echo "[!] No extra_cfg.yml found for $track_name"
                 fi
 
                 if [ -f \"\$entry_list\" ]; then
+
                     sed -i '/^AI=/d' \"\$entry_list\"
 
                     tmpfile=\$(mktemp)
@@ -548,26 +552,6 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
                 else
                     echo \"[!] entry_list.ini not found for \$track_name\"
                 fi
-
-                # --- Prompt for TwoWayTraffic ---
-                while true; do
-                    read -p \"Enable Two Way Traffic for \$track_name? (y/n): \" tw_ans
-                    case \"\$tw_ans\" in
-                        [Yy]* )
-                            if [ -f \"\$extra_cfg\" ]; then
-                                if grep -q '^[[:space:]]*TwoWayTraffic:' \"\$extra_cfg\"; then
-                                    sed -i 's/^[[:space:]]*TwoWayTraffic:.*/TwoWayTraffic: true/' \"\$extra_cfg\"
-                                else
-                                    echo 'TwoWayTraffic: true' >> \"\$extra_cfg\"
-                                fi
-                                echo \"[+] TwoWayTraffic set to true in extra_cfg.yml\"
-                            fi
-                            break ;;
-                        [Nn]* ) break ;;
-                        * ) echo \"[!] Please answer y or n.\" ;;
-                    esac
-                done
-
                 break ;;
             [Nn]* ) break ;;
             * ) echo \"[!] Please answer y or n.\" ;;
@@ -576,8 +560,8 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
 
     # --- Append INFINITE=1 ---
     if [ -f \"\$server_cfg\" ]; then
-        grep -qxF \"INFINITE=1\" \"\$server_cfg\" || echo \"INFINITE=1\" >> \"\$server_cfg\"
-        echo \"[+] Ensured INFINITE=1 is present in server_cfg.ini\"
+        echo \"INFINITE=1\" >> \"\$server_cfg\"
+        echo \"[+] Added INFINITE=1 to server_cfg.ini\"
     fi
 
     # --- Move fast_lane.aip if present ---
@@ -594,10 +578,8 @@ for track_dir in /home/\$USERNAME/assetto-servers/*/; do
     fi
 done
 EOF
-chmod +x $CONFIG_SCRIPT"
-
-# Replace placeholder with actual username safely
-pct exec $CTID -- sed -i "s|__REPLACE__|$USERNAME|" $CONFIG_SCRIPT
+chmod +x $CONFIG_SCRIPT
+"
 
 # Run the script interactively as root inside the container
 pct exec $CTID -- bash $CONFIG_SCRIPT
@@ -615,8 +597,4 @@ echo -e "${YELLOW}The server will not work without port forwarding.${RESET}"
 
 echo
 echo -e "${GREEN} +++ Happy Racing! +++ ${RESET}"
-echo
-echo
-echo
-echo
 
